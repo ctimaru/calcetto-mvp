@@ -12,6 +12,13 @@ This is a light application because it manages multiple interconnected features 
 
 ## Essential Features
 
+### Match Creation
+- **Functionality**: Multi-step wizard for creating new matches with venue selection or creation
+- **Purpose**: Enables users to organize their own matches and invite other players
+- **Trigger**: User clicks "Crea Partita" button in header (requires authentication)
+- **Progression**: Click create → Step 1: Select or add venue → Step 2: Choose date and time → Step 3: Set details (skill level, player count, price, description) → Submit → Match created and user auto-joined
+- **Success criteria**: Creation takes under 2 minutes, venue data persists for reuse, creator is automatically added as first participant, match appears in browse listing immediately
+
 ### Browse Matches Page
 - **Functionality**: Comprehensive match browsing with real-time search and multi-criteria filtering
 - **Purpose**: Enables users to quickly discover relevant matches based on their preferences
@@ -73,6 +80,10 @@ This is a light application because it manages multiple interconnected features 
 - **No Reviews Yet**: Empty state encouraging users to be the first to review after playing at the venue
 - **Review Before Match Completion**: Prevent users from reviewing venues until after the match has occurred
 - **Multiple Reviews**: Limit users to one review per match at each venue to prevent spam
+- **Creating Match Without Profile**: Redirect users to profile creation if they attempt to create a match without being logged in
+- **Invalid Venue Data**: Validate all venue fields before allowing creation, show specific error messages
+- **Past Date Selection**: Prevent users from selecting dates in the past for new matches
+- **Unrealistic Player Counts**: Enforce min/max player limits (2-22) with helpful guidance for typical match sizes
 
 ## Design Direction
 
@@ -127,15 +138,15 @@ Animations should feel athletic and responsive - quick, confident movements that
   - **Button**: Primary actions use solid accent color, secondary use outline with primary color
   - **Badge**: Skill level indicators (principiante/intermedio/avanzato) with color-coded variants
   - **Avatar**: Player profile images in participant lists and header (fallback to initials)
-  - **Dialog**: Payment flow, match details overlay, and profile creation/editing
-  - **Input**: Profile editing and filters with clear focus states using accent color ring
-  - **Select**: Dropdown for skill level and location filters
+  - **Dialog**: Payment flow, match details overlay, match creation wizard, and profile creation/editing
+  - **Input**: Profile editing, filters, and match creation forms with clear focus states using accent color ring
+  - **Select**: Dropdown for skill level, location filters, and venue selection
   - **Tabs**: Switch between "Available Matches" and "My Matches" in profile, or upcoming/past matches
   - **Separator**: Divides match details sections and profile information groups
   - **ScrollArea**: Smooth scrolling for match lists and chat
-  - **Toast**: Match confirmations, profile updates, and error messages using Sonner
-  - **Progress**: Visual indicator for rating distribution in venue reviews
-  - **Textarea**: Multi-line input for review comments
+  - **Toast**: Match confirmations, profile updates, match creation success, and error messages using Sonner
+  - **Progress**: Visual indicator for rating distribution in venue reviews and match creation progress
+  - **Textarea**: Multi-line input for review comments and match descriptions
 
 - **Customizations**:
   - **MatchCard**: Custom component combining Card with match-specific layout (venue, time, players count, skill level badges, venue rating)
@@ -148,6 +159,7 @@ Animations should feel athletic and responsive - quick, confident movements that
   - **VenueReviewsDialog**: Full-page dialog showing venue rating summary, distribution, and all reviews
   - **ProfileCreationDialog**: Multi-step wizard for creating/editing user profiles with validation and smooth transitions
   - **ProfileView**: Comprehensive profile page showing user info, statistics, and match history with tabs for upcoming/past matches
+  - **CreateMatchDialog**: 3-step wizard for match creation (venue selection/creation, date/time, match details) with progress indicator and validation
 
 - **States**:
   - Buttons: Default has solid background, hover brightens (+10% lightness), active scales down 97%, disabled reduces opacity to 50%
@@ -173,6 +185,9 @@ Animations should feel athletic and responsive - quick, confident movements that
   - TrendUp for statistics
   - EnvelopeSimple for email display
   - ArrowLeft for back navigation
+  - Plus for create actions (new match, new venue)
+  - X for close/cancel actions
+  - CurrencyEur for pricing information
 
 - **Spacing**:
   - Cards: p-6 for match cards, p-4 for compact variants
