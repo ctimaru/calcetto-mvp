@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { type User } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { 
   Users, 
   Trophy, 
@@ -11,11 +13,14 @@ import {
   MapPin,
   ArrowRight,
   Star,
-  CheckCircle
+  CheckCircle,
+  User as UserIcon
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'sonner'
 import { BrowseMatches } from '@/components/BrowseMatches'
+import { ProfileCreationDialog } from '@/components/ProfileCreationDialog'
+import { ProfileView } from '@/components/ProfileView'
 
 interface Stat {
   label: string
@@ -31,16 +36,46 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile'>('home')
+  const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
+
+  useEffect(() => {
+    if (!currentUser) {
+      setIsProfileDialogOpen(true)
+    }
+  }, [])
+
+  const handleProfileCreated = (user: User) => {
+    setCurrentUser(user)
+    setIsProfileDialogOpen(false)
+  }
+
+  const handleUserUpdate = (updatedUser: User) => {
+    setCurrentUser(updatedUser)
+  }
 
   if (currentView === 'browse') {
     return (
       <>
         <Toaster richColors position="top-center" />
         <BrowseMatches onBack={() => setCurrentView('home')} />
+      </>
+    )
+  }
+
+  if (currentView === 'profile' && currentUser) {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <ProfileView 
+          user={currentUser} 
+          onBack={() => setCurrentView('home')}
+          onUserUpdate={handleUserUpdate}
+        />
       </>
     )
   }
@@ -92,6 +127,31 @@ function App() {
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-center" />
       
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Trophy size={32} weight="fill" className="text-primary" />
+              <span className="text-xl font-bold">Players League</span>
+            </div>
+            {currentUser && (
+              <Button
+                variant="ghost"
+                onClick={() => setCurrentView('profile')}
+                className="gap-2 hover:bg-primary/10"
+              >
+                <Avatar className="h-8 w-8 border-2 border-accent/30">
+                  <AvatarFallback className="bg-accent/10 text-accent text-sm font-bold">
+                    {`${currentUser.firstName.charAt(0)}${currentUser.lastName.charAt(0)}`.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline">{currentUser.firstName}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5" />
         <div 
@@ -142,13 +202,25 @@ function App() {
                 Sfoglia Partite
                 <ArrowRight size={20} weight="bold" className="ml-2" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
-              >
-                Crea Profilo
-              </Button>
+              {currentUser ? (
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
+                  onClick={() => setCurrentView('profile')}
+                >
+                  Vai al Profilo
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
+                  onClick={() => setIsProfileDialogOpen(true)}
+                >
+                  Crea Profilo
+                </Button>
+              )}
             </div>
           </motion.div>
 
@@ -287,6 +359,16 @@ function App() {
           </div>
         </div>
       </footer>
+
+      <ProfileCreationDialog
+        open={isProfileDialogOpen && !currentUser}
+        onClose={() => {
+          if (currentUser) {
+            setIsProfileDialogOpen(false)
+          }
+        }}
+        onProfileCreated={handleProfileCreated}
+      />
     </div>
   )
 }

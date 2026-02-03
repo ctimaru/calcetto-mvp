@@ -34,11 +34,11 @@ This is a light application because it manages multiple interconnected features 
 - **Success criteria**: Payment flow completes in under 30 seconds, users receive immediate confirmation
 
 ### User Profile Management
-- **Functionality**: Create and edit personal profile with skill level and preferences
-- **Purpose**: Enables match recommendations and helps organize appropriate skill-level games
-- **Trigger**: First-time registration or profile edit action
-- **Progression**: Registration prompt → Enter name/email/password → Set location → Select skill level → Save profile → Start browsing matches
-- **Success criteria**: Profile creation takes under 90 seconds, information persists correctly
+- **Functionality**: Create and edit personal profile with skill level and preferences; view match history and statistics
+- **Purpose**: Enables match recommendations, helps organize appropriate skill-level games, and provides users with their activity overview
+- **Trigger**: First-time app load (automatic) or clicking profile button/avatar in header
+- **Progression**: App launch → Profile creation dialog appears (3-step wizard) → Enter name/email → Enter age/location → Select skill level → Save profile → Redirected to home page with profile available in header
+- **Success criteria**: Profile creation takes under 90 seconds, information persists correctly, users can view their upcoming and past matches, edit profile anytime from profile page
 
 ### Match Participant View
 - **Functionality**: See who else is confirmed for a match
@@ -126,26 +126,28 @@ Animations should feel athletic and responsive - quick, confident movements that
   - **Card**: Foundation for match listings with custom hover states and subtle green border accent
   - **Button**: Primary actions use solid accent color, secondary use outline with primary color
   - **Badge**: Skill level indicators (principiante/intermedio/avanzato) with color-coded variants
-  - **Avatar**: Player profile images in participant lists (fallback to initials)
-  - **Dialog**: Payment flow and match details overlay
+  - **Avatar**: Player profile images in participant lists and header (fallback to initials)
+  - **Dialog**: Payment flow, match details overlay, and profile creation/editing
   - **Input**: Profile editing and filters with clear focus states using accent color ring
   - **Select**: Dropdown for skill level and location filters
-  - **Tabs**: Switch between "Available Matches" and "My Matches"
-  - **Separator**: Divides match details sections
+  - **Tabs**: Switch between "Available Matches" and "My Matches" in profile, or upcoming/past matches
+  - **Separator**: Divides match details sections and profile information groups
   - **ScrollArea**: Smooth scrolling for match lists and chat
-  - **Toast**: Match confirmations and error messages using Sonner
+  - **Toast**: Match confirmations, profile updates, and error messages using Sonner
   - **Progress**: Visual indicator for rating distribution in venue reviews
   - **Textarea**: Multi-line input for review comments
 
 - **Customizations**:
   - **MatchCard**: Custom component combining Card with match-specific layout (venue, time, players count, skill level badges, venue rating)
   - **PlayerCount**: Visual indicator showing filled vs. total spots (e.g., "8/10" with progress bar)
-  - **SkillBadge**: Color-coded badges (green for principiante, yellow for intermedio, red for avanzato)
+  - **SkillBadge**: Color-coded badges (green for principiante, yellow for intermedio, red for avanzato) with size variants (sm, md, lg)
   - **PaymentSheet**: Multi-step dialog for payment flow with Stripe-style input styling
   - **StarRating**: Interactive and display-only star rating component supporting partial stars
   - **VenueReviewCard**: Card displaying individual review with ratings, aspects, and helpful votes
   - **AddReviewDialog**: Multi-section dialog for submitting venue reviews with overall and aspect ratings
   - **VenueReviewsDialog**: Full-page dialog showing venue rating summary, distribution, and all reviews
+  - **ProfileCreationDialog**: Multi-step wizard for creating/editing user profiles with validation and smooth transitions
+  - **ProfileView**: Comprehensive profile page showing user info, statistics, and match history with tabs for upcoming/past matches
 
 - **States**:
   - Buttons: Default has solid background, hover brightens (+10% lightness), active scales down 97%, disabled reduces opacity to 50%
@@ -158,6 +160,7 @@ Animations should feel athletic and responsive - quick, confident movements that
   - MapPin for venue locations
   - Clock for match times  
   - Users for participant counts
+  - User for profile sections
   - Star for ratings and skill level
   - CreditCard for payment actions
   - Check/CheckCircle for confirmations
@@ -165,6 +168,11 @@ Animations should feel athletic and responsive - quick, confident movements that
   - FunnelSimple for filters
   - ChatCircle for match chat
   - ThumbsUp for marking reviews as helpful
+  - PencilSimple for edit actions
+  - Trophy for achievements and skill
+  - TrendUp for statistics
+  - EnvelopeSimple for email display
+  - ArrowLeft for back navigation
 
 - **Spacing**:
   - Cards: p-6 for match cards, p-4 for compact variants
