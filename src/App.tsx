@@ -291,6 +291,59 @@ function App() {
         </div>
       </div>
 
+      <section className="py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="max-w-6xl mx-auto"
+          >
+            <Card className="border-primary/20 shadow-xl overflow-hidden">
+              <div className="grid md:grid-cols-2 gap-0">
+                <div className="relative order-2 md:order-1 h-64 md:h-auto">
+                  <img 
+                    src="https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80"
+                    alt="Kid playing soccer"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent" />
+                </div>
+                <div className="relative order-1 md:order-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
+                  <CardContent className="relative pt-12 pb-12 px-8 text-primary-foreground h-full flex flex-col justify-center">
+                    <Trophy size={48} weight="duotone" className="mb-6 opacity-90" />
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                      Ready to Play?
+                    </h2>
+                    <p className="text-lg mb-8 opacity-95">
+                      Join thousands of players already on the platform. Create your profile and find your next match in minutes.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <Button 
+                        size="lg"
+                        className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        onClick={() => setCurrentView('browse')}
+                      >
+                        Inizia Ora
+                        <ArrowRight size={20} weight="bold" className="ml-2" />
+                      </Button>
+                      <Button 
+                        size="lg"
+                        variant="outline"
+                        className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
+                      >
+                        Scopri di Più
+                      </Button>
+                    </div>
+                  </CardContent>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
       <section className="py-20 md:py-28">
         <div className="container mx-auto px-4">
           <motion.div
@@ -331,50 +384,6 @@ function App() {
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gradient-to-b from-transparent via-primary/5 to-transparent">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl mx-auto"
-          >
-            <Card className="border-primary/20 shadow-xl overflow-hidden">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
-                <CardContent className="relative pt-12 pb-12 text-center text-primary-foreground">
-                  <Trophy size={48} weight="duotone" className="mx-auto mb-6 opacity-90" />
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                    Ready to Play?
-                  </h2>
-                  <p className="text-lg mb-8 opacity-95 max-w-2xl mx-auto">
-                    Join thousands of players already on the platform. Create your profile and find your next match in minutes.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button 
-                      size="lg"
-                      className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                      onClick={() => setCurrentView('browse')}
-                    >
-                      Inizia Ora
-                      <ArrowRight size={20} weight="bold" className="ml-2" />
-                    </Button>
-                    <Button 
-                      size="lg"
-                      variant="outline"
-                      className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
-                    >
-                      Scopri di Più
-                    </Button>
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
-          </motion.div>
         </div>
       </section>
 
