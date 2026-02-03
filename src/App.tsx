@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'sonner'
+import { BrowseMatches } from '@/components/BrowseMatches'
 
 interface Stat {
   label: string
@@ -30,9 +31,19 @@ interface Feature {
 }
 
 function App() {
+  const [currentView, setCurrentView] = useState<'home' | 'browse'>('home')
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
+
+  if (currentView === 'browse') {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <BrowseMatches onBack={() => setCurrentView('home')} />
+      </>
+    )
+  }
 
   const stats: Stat[] = [
     {
@@ -126,8 +137,9 @@ function App() {
               <Button 
                 size="lg" 
                 className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                onClick={() => setCurrentView('browse')}
               >
-                Browse Matches
+                Sfoglia Partite
                 <ArrowRight size={20} weight="bold" className="ml-2" />
               </Button>
               <Button 
@@ -135,7 +147,7 @@ function App() {
                 variant="outline"
                 className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
               >
-                Create Profile
+                Crea Profilo
               </Button>
             </div>
           </motion.div>
@@ -242,8 +254,9 @@ function App() {
                     <Button 
                       size="lg"
                       className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                      onClick={() => setCurrentView('browse')}
                     >
-                      Get Started
+                      Inizia Ora
                       <ArrowRight size={20} weight="bold" className="ml-2" />
                     </Button>
                     <Button 
@@ -251,7 +264,7 @@ function App() {
                       variant="outline"
                       className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
                     >
-                      Learn More
+                      Scopri di Più
                     </Button>
                   </div>
                 </CardContent>

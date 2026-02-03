@@ -12,6 +12,13 @@ This is a light application because it manages multiple interconnected features 
 
 ## Essential Features
 
+### Browse Matches Page
+- **Functionality**: Comprehensive match browsing with real-time search and multi-criteria filtering
+- **Purpose**: Enables users to quickly discover relevant matches based on their preferences
+- **Trigger**: User clicks "Sfoglia Partite" button from home page or navigation
+- **Progression**: Click browse → View full match listing → Apply filters (skill level/city/date) → Enter search terms → Review filtered results → Select match for details
+- **Success criteria**: Search responds instantly as user types, filters can be combined effectively, match list displays within 1 second, mobile filters are accessible via collapsible panel
+
 ### Match Discovery
 - **Functionality**: Browse available matches in the user's geographic area
 - **Purpose**: Solves the core problem of finding games to join
