@@ -37,8 +37,22 @@ This is a light application because it manages multiple interconnected features 
 - **Functionality**: View comprehensive match information and join with payment
 - **Purpose**: Enables users to make informed decisions and commit to participation
 - **Trigger**: User selects a match from the list
-- **Progression**: Select match → Review details (venue, time, players, level) → Click join → Complete payment → Receive confirmation
-- **Success criteria**: Payment flow completes in under 30 seconds, users receive immediate confirmation
+- **Progression**: Select match → Review details (venue, time, players, level) → Click join → Select payment method → Enter payment details → Confirm payment → Receive confirmation
+- **Success criteria**: Payment flow completes in under 30 seconds, users receive immediate confirmation, transaction is recorded in history
+
+### Payment Processing
+- **Functionality**: Secure payment handling with multiple payment methods (credit/debit card, PayPal, bank transfer) with full validation
+- **Purpose**: Enables safe and reliable payment processing for match participation fees
+- **Trigger**: User clicks "Unisciti alla Partita" from match details dialog
+- **Progression**: Click join → Payment dialog opens → Select payment method → Enter payment details (card number, expiry, CVC, cardholder name) → Review order summary → Confirm payment → Processing animation → Success confirmation with transaction receipt
+- **Success criteria**: Payment completes within 2 seconds, card validation works correctly, users see clear payment summary before confirming, transaction is immediately visible in transaction history, failed payments show clear error messages
+
+### Transaction History
+- **Functionality**: Comprehensive view of all financial transactions including payments, refunds, bonuses, and cancellation fees with detailed metadata
+- **Purpose**: Provides full transparency of user's financial activity and enables easy tracking of match-related expenses
+- **Trigger**: User navigates to "Transazioni" tab in profile view
+- **Progression**: Open profile → Click transactions tab → View transaction summary cards (total spent, refunds, bonuses) → Scroll through chronological transaction list → View transaction details including venue, date, payment method
+- **Success criteria**: All transactions display correctly with proper icons and colors, summary totals are accurate, transactions are sorted by date (newest first), transaction metadata shows complete match information
 
 ### User Profile Management
 - **Functionality**: Create and edit personal profile with skill level and preferences; view match history and statistics
@@ -72,11 +86,15 @@ This is a light application because it manages multiple interconnected features 
 
 - **No Matches Available**: Display encouraging empty state with "Check back soon" message and option to get notified
 - **Payment Failure**: Clear error message with retry option and alternative payment method suggestion
-- **Match Cancellation**: Immediate push notification to all participants with automatic refund processing
+- **Invalid Card Details**: Real-time validation of card number format (16 digits), expiry date format (MM/YY), and CVC (3 digits) with specific error messages
+- **Processing Timeout**: If payment takes longer than expected, show reassuring message that transaction is being processed
+- **Duplicate Transaction Prevention**: Disable payment button during processing to prevent double-charging
+- **Match Cancellation**: Immediate push notification to all participants with automatic refund processing, refund transaction appears in transaction history
 - **Location Services Disabled**: Graceful fallback to manual city selection with prominent enable-location prompt
 - **Offline Access**: Display cached match data with clear "offline" indicator and queue actions for when connection returns
 - **Full Match**: Prevent join attempts with waitlist option and notification when spots open
 - **Minimum Players Not Met**: Notification to participants 24h before with cancellation if threshold not reached
+- **Empty Transaction History**: Show encouraging empty state explaining that transactions will appear after joining matches
 - **No Reviews Yet**: Empty state encouraging users to be the first to review after playing at the venue
 - **Review Before Match Completion**: Prevent users from reviewing venues until after the match has occurred
 - **Multiple Reviews**: Limit users to one review per match at each venue to prevent spam
@@ -84,6 +102,7 @@ This is a light application because it manages multiple interconnected features 
 - **Invalid Venue Data**: Validate all venue fields before allowing creation, show specific error messages
 - **Past Date Selection**: Prevent users from selecting dates in the past for new matches
 - **Unrealistic Player Counts**: Enforce min/max player limits (2-22) with helpful guidance for typical match sizes
+- **Transaction Filtering**: Future enhancement to filter transactions by type, status, or date range
 
 ## Design Direction
 
@@ -136,29 +155,31 @@ Animations should feel athletic and responsive - quick, confident movements that
 - **Components**:
   - **Card**: Foundation for match listings with custom hover states and subtle green border accent
   - **Button**: Primary actions use solid accent color, secondary use outline with primary color
-  - **Badge**: Skill level indicators (principiante/intermedio/avanzato) with color-coded variants
+  - **Badge**: Skill level indicators (principiante/intermedio/avanzato) with color-coded variants, transaction status badges
   - **Avatar**: Player profile images in participant lists and header (fallback to initials)
   - **Dialog**: Payment flow, match details overlay, match creation wizard, and profile creation/editing
-  - **Input**: Profile editing, filters, and match creation forms with clear focus states using accent color ring
-  - **Select**: Dropdown for skill level, location filters, and venue selection
-  - **Tabs**: Switch between "Available Matches" and "My Matches" in profile, or upcoming/past matches
-  - **Separator**: Divides match details sections and profile information groups
-  - **ScrollArea**: Smooth scrolling for match lists and chat
-  - **Toast**: Match confirmations, profile updates, match creation success, and error messages using Sonner
-  - **Progress**: Visual indicator for rating distribution in venue reviews and match creation progress
+  - **Input**: Profile editing, filters, match creation forms, and payment card details with clear focus states using accent color ring
+  - **Select**: Dropdown for skill level, location filters, venue selection, and payment method selection
+  - **RadioGroup**: Payment method selection with visual cards for each option
+  - **Tabs**: Switch between "Available Matches" and "My Matches" in profile, upcoming/past matches, and transaction history
+  - **Separator**: Divides match details sections, profile information groups, and payment summary sections
+  - **ScrollArea**: Smooth scrolling for match lists, chat, and transaction history
+  - **Toast**: Match confirmations, profile updates, match creation success, payment confirmations, and error messages using Sonner
+  - **Progress**: Visual indicator for rating distribution in venue reviews, match creation progress, and payment processing
   - **Textarea**: Multi-line input for review comments and match descriptions
 
 - **Customizations**:
   - **MatchCard**: Custom component combining Card with match-specific layout (venue, time, players count, skill level badges, venue rating)
   - **PlayerCount**: Visual indicator showing filled vs. total spots (e.g., "8/10" with progress bar)
   - **SkillBadge**: Color-coded badges (green for principiante, yellow for intermedio, red for avanzato) with size variants (sm, md, lg)
-  - **PaymentSheet**: Multi-step dialog for payment flow with Stripe-style input styling
+  - **PaymentDialog**: Multi-step payment dialog with payment method selection (card, PayPal, bank transfer), card detail inputs with format validation, order summary, and secure payment confirmation with processing animation
+  - **TransactionHistory**: Comprehensive transaction list with summary cards showing total spent/refunded/bonuses, chronological transaction cards with type/status badges, payment method display, and transaction metadata (venue, date, time)
   - **StarRating**: Interactive and display-only star rating component supporting partial stars
   - **VenueReviewCard**: Card displaying individual review with ratings, aspects, and helpful votes
   - **AddReviewDialog**: Multi-section dialog for submitting venue reviews with overall and aspect ratings
   - **VenueReviewsDialog**: Full-page dialog showing venue rating summary, distribution, and all reviews
   - **ProfileCreationDialog**: Multi-step wizard for creating/editing user profiles with validation and smooth transitions
-  - **ProfileView**: Comprehensive profile page showing user info, statistics, and match history with tabs for upcoming/past matches
+  - **ProfileView**: Comprehensive profile page showing user info, statistics, and match history with tabs for upcoming/past matches and transaction history
   - **CreateMatchDialog**: 3-step wizard for match creation (venue selection/creation, date/time, match details) with progress indicator and validation
 
 - **States**:
@@ -174,9 +195,18 @@ Animations should feel athletic and responsive - quick, confident movements that
   - Users for participant counts
   - User for profile sections
   - Star for ratings and skill level
-  - CreditCard for payment actions
+  - CreditCard for payment actions and card payment method
+  - Bank for PayPal and bank transfer payment methods
+  - Receipt for transaction history
+  - ArrowCircleUp for payment/expense transactions
+  - ArrowCircleDown for refund transactions
+  - Gift for bonus transactions
+  - WarningCircle for cancellation fees and warnings
+  - CheckCircle for confirmations and completed status
+  - XCircle for failed transactions
   - Check/CheckCircle for confirmations
   - CalendarBlank for date selection
+  - Calendar for match dates
   - FunnelSimple for filters
   - ChatCircle for match chat
   - ThumbsUp for marking reviews as helpful
@@ -188,6 +218,8 @@ Animations should feel athletic and responsive - quick, confident movements that
   - Plus for create actions (new match, new venue)
   - X for close/cancel actions
   - CurrencyEur for pricing information
+  - LockKey for secure payment processing animation
+  - ShieldCheck for payment security badge
 
 - **Spacing**:
   - Cards: p-6 for match cards, p-4 for compact variants

@@ -83,7 +83,7 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
-        <BrowseMatches onBack={() => setCurrentView('home')} />
+        <BrowseMatches onBack={() => setCurrentView('home')} currentUser={currentUser || null} />
       </>
     )
   }

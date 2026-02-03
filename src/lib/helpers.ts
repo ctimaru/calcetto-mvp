@@ -69,6 +69,36 @@ export const getRelativeTime = (timestamp: string): string => {
   }
 }
 
+export const formatTransactionType = (type: string): string => {
+  const types: Record<string, string> = {
+    payment: 'Pagamento',
+    refund: 'Rimborso',
+    cancellation_fee: 'Penale Cancellazione',
+    bonus: 'Bonus'
+  }
+  return types[type] || type
+}
+
+export const formatTransactionStatus = (status: string): string => {
+  const statuses: Record<string, string> = {
+    pending: 'In Elaborazione',
+    completed: 'Completato',
+    failed: 'Fallito',
+    refunded: 'Rimborsato'
+  }
+  return statuses[status] || status
+}
+
+export const getTransactionStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    pending: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
+    completed: 'bg-green-500/10 text-green-700 border-green-500/20',
+    failed: 'bg-red-500/10 text-red-700 border-red-500/20',
+    refunded: 'bg-blue-500/10 text-blue-700 border-blue-500/20'
+  }
+  return colors[status] || 'bg-gray-500/10 text-gray-700 border-gray-500/20'
+}
+
 export const getDefaultVenues = () => {
   return [
     {

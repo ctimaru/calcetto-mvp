@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match } from '@/lib/types'
+import { type User, type Match, type Transaction } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,11 +18,13 @@ import {
   SoccerBall,
   Star,
   TrendUp,
-  CheckCircle
+  CheckCircle,
+  Receipt
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { ProfileCreationDialog } from '@/components/ProfileCreationDialog'
 import { SkillBadge } from '@/components/SkillBadge'
+import { TransactionHistory } from '@/components/TransactionHistory'
 
 interface ProfileViewProps {
   user: User
@@ -32,11 +34,14 @@ interface ProfileViewProps {
 
 export function ProfileView({ user, onBack, onUserUpdate }: ProfileViewProps) {
   const [matches] = useKV<Match[]>('matches', [])
+  const [transactions] = useKV<Transaction[]>('transactions', [])
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const userMatches = matches?.filter(match => 
     match.participants.some(p => p.userId === user.id)
   ) || []
+
+  const userTransactions = transactions?.filter(t => t.userId === user.id) || []
 
   const upcomingMatches = userMatches.filter(match => {
     const matchDate = new Date(match.date)
@@ -174,7 +179,7 @@ export function ProfileView({ user, onBack, onUserUpdate }: ProfileViewProps) {
             </Card>
 
             <Tabs defaultValue="upcoming" className="space-y-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-2xl grid-cols-3">
                 <TabsTrigger value="upcoming" className="gap-2">
                   <Calendar size={18} />
                   Prossime ({upcomingMatches.length})
@@ -182,6 +187,10 @@ export function ProfileView({ user, onBack, onUserUpdate }: ProfileViewProps) {
                 <TabsTrigger value="past" className="gap-2">
                   <CheckCircle size={18} />
                   Completate ({pastMatches.length})
+                </TabsTrigger>
+                <TabsTrigger value="transactions" className="gap-2">
+                  <Receipt size={18} />
+                  Transazioni ({userTransactions.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -325,6 +334,10 @@ export function ProfileView({ user, onBack, onUserUpdate }: ProfileViewProps) {
                     ))}
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="transactions" className="space-y-4">
+                <TransactionHistory transactions={userTransactions} />
               </TabsContent>
             </Tabs>
           </motion.div>

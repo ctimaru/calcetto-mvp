@@ -74,3 +74,26 @@ export interface ChatMessage {
   message: string
   timestamp: string
 }
+
+export type TransactionType = 'payment' | 'refund' | 'cancellation_fee' | 'bonus'
+export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'refunded'
+
+export interface Transaction {
+  id: string
+  userId: string
+  matchId?: string
+  type: TransactionType
+  status: TransactionStatus
+  amount: number
+  description: string
+  timestamp: string
+  paymentMethod?: 'card' | 'paypal' | 'bank_transfer'
+  cardLast4?: string
+  relatedTransactionId?: string
+  metadata?: {
+    venueName?: string
+    matchDate?: string
+    matchTime?: string
+    refundReason?: string
+  }
+}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type Match, type SkillLevel } from '@/lib/types'
+import { type Match, type SkillLevel, type User, type Transaction, type Participant } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { MatchCard } from '@/components/MatchCard'
 import { MatchDetailsDialog } from '@/components/MatchDetailsDialog'
+import { PaymentDialog } from '@/components/PaymentDialog'
 import { 
   MagnifyingGlass, 
   FunnelSimple, 
@@ -19,18 +20,24 @@ import {
   ArrowLeft
 } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
+import { formatDate, generateId } from '@/lib/helpers'
 
 interface BrowseMatchesProps {
   onBack: () => void
+  currentUser: User | null
 }
 
-export function BrowseMatches({ onBack }: BrowseMatchesProps) {
-  const [matches] = useKV<Match[]>('matches', generateMockMatches())
+export function BrowseMatches({ onBack, currentUser }: BrowseMatchesProps) {
+  const [matches, setMatches] = useKV<Match[]>('matches', generateMockMatches())
+  const [transactions, setTransactions] = useKV<Transaction[]>('transactions', [])
+  const [users, setUsers] = useKV<User[]>('users', [])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<SkillLevel | 'all'>('all')
   const [selectedCity, setSelectedCity] = useState<string>('all')
   const [selectedDate, setSelectedDate] = useState<string>('all')
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const [matchToJoin, setMatchToJoin] = useState<Match | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
   const cities = useMemo(() => {
@@ -71,6 +78,81 @@ export function BrowseMatches({ onBack }: BrowseMatchesProps) {
     setSelectedCity('all')
     setSelectedDate('all')
     setSearchQuery('')
+  }
+
+  const handleJoinMatch = (matchId: string) => {
+    if (!currentUser) {
+      toast.error('Devi creare un profilo per unirti a una partita')
+      return
+    }
+
+    const match = matches?.find(m => m.id === matchId)
+    if (!match) {
+      toast.error('Partita non trovata')
+      return
+    }
+
+    setMatchToJoin(match)
+    setSelectedMatch(null)
+  }
+
+  const handlePaymentConfirm = (paymentMethod: 'card' | 'paypal' | 'bank_transfer', cardLast4?: string) => {
+    if (!matchToJoin || !currentUser) return
+
+    const newParticipant: Participant = {
+      userId: currentUser.id,
+      firstName: currentUser.firstName,
+      lastName: currentUser.lastName,
+      skillLevel: currentUser.skillLevel,
+      joinedAt: new Date().toISOString(),
+      paid: true
+    }
+
+    const updatedMatches = (matches || []).map(m => {
+      if (m.id === matchToJoin.id) {
+        return {
+          ...m,
+          currentPlayers: m.currentPlayers + 1,
+          participants: [...m.participants, newParticipant],
+          status: (m.currentPlayers + 1 >= m.totalPlayers ? 'full' : 'open') as 'open' | 'full' | 'cancelled'
+        }
+      }
+      return m
+    })
+
+    const updatedUser: User = {
+      ...currentUser,
+      joinedMatches: [...currentUser.joinedMatches, matchToJoin.id]
+    }
+
+    const updatedUsers = (users || []).map(u => 
+      u.id === currentUser.id ? updatedUser : u
+    )
+
+    const newTransaction: Transaction = {
+      id: generateId(),
+      userId: currentUser.id,
+      matchId: matchToJoin.id,
+      type: 'payment',
+      status: 'completed',
+      amount: matchToJoin.price,
+      description: `Pagamento per partita presso ${matchToJoin.venue.name}`,
+      timestamp: new Date().toISOString(),
+      paymentMethod,
+      cardLast4,
+      metadata: {
+        venueName: matchToJoin.venue.name,
+        matchDate: formatDate(matchToJoin.date),
+        matchTime: matchToJoin.time
+      }
+    }
+
+    setMatches(updatedMatches)
+    setUsers(updatedUsers)
+    setTransactions((currentTransactions) => [...(currentTransactions || []), newTransaction])
+    
+    setMatchToJoin(null)
+    toast.success(`Ti sei unito alla partita presso ${matchToJoin.venue.name}!`)
   }
 
   return (
@@ -291,10 +373,16 @@ export function BrowseMatches({ onBack }: BrowseMatchesProps) {
         match={selectedMatch}
         open={!!selectedMatch}
         onClose={() => setSelectedMatch(null)}
-        onJoin={(matchId) => {
-          console.log('Joining match:', matchId)
-        }}
-        currentUser={null}
+        onJoin={handleJoinMatch}
+        currentUser={currentUser}
+      />
+
+      <PaymentDialog
+        match={matchToJoin}
+        open={!!matchToJoin}
+        onClose={() => setMatchToJoin(null)}
+        onConfirm={handlePaymentConfirm}
+        currentUser={currentUser}
       />
     </div>
   )
