@@ -1,396 +1,279 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match, type SkillLevel, type VenueReview, type Venue } from '@/lib/types'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { UserCircle, SoccerBall } from '@phosphor-icons/react'
-import { MatchCard } from '@/components/MatchCard'
-import { MatchDetailsDialog } from '@/components/MatchDetailsDialog'
-import { ProfileDialog } from '@/components/ProfileDialog'
-import { MatchFilters } from '@/components/MatchFilters'
-import { AddReviewDialog } from '@/components/AddReviewDialog'
-import { VenueReviewsDialog } from '@/components/VenueReviewsDialog'
-import { generateId } from '@/lib/helpers'
-import { toast, Toaster } from 'sonner'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Users, 
+  Trophy, 
+  Calendar, 
+  TrendUp, 
+  MapPin,
+  ArrowRight,
+  Star,
+  CheckCircle
+} from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { Toaster } from 'sonner'
+
+interface Stat {
+  label: string
+  value: string
+  icon: React.ReactNode
+  trend?: string
+}
+
+interface Feature {
+  title: string
+  description: string
+  icon: React.ReactNode
+}
 
 function App() {
-  const [matches, setMatches] = useKV<Match[]>('matches', [])
-  const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
-  const [reviews, setReviews] = useKV<VenueReview[]>('venue-reviews', [])
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
-  const [showMatchDetails, setShowMatchDetails] = useState(false)
-  const [showProfile, setShowProfile] = useState(false)
-  const [skillFilter, setSkillFilter] = useState<SkillLevel | 'all'>('all')
-  const [showAddReview, setShowAddReview] = useState(false)
-  const [matchToReview, setMatchToReview] = useState<Match | null>(null)
-  const [showVenueReviews, setShowVenueReviews] = useState(false)
-  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
+  const [activeMatches] = useKV<number>('active-matches', 47)
+  const [totalPlayers] = useKV<number>('total-players', 1243)
+  const [upcomingGames] = useKV<number>('upcoming-games', 23)
 
-  useEffect(() => {
-    if (!currentUser) {
-      setShowProfile(true)
+  const stats: Stat[] = [
+    {
+      label: 'Active Players',
+      value: (totalPlayers || 0).toLocaleString(),
+      icon: <Users size={24} weight="duotone" />,
+      trend: '+12% this week'
+    },
+    {
+      label: 'Live Matches',
+      value: (activeMatches || 0).toString(),
+      icon: <Trophy size={24} weight="duotone" />,
+    },
+    {
+      label: 'Upcoming Games',
+      value: (upcomingGames || 0).toString(),
+      icon: <Calendar size={24} weight="duotone" />,
+      trend: 'Next 7 days'
     }
-  }, [currentUser])
+  ]
 
-  const handleSaveProfile = (userData: Partial<User>) => {
-    if (currentUser) {
-      setCurrentUser((prev) => (prev ? { ...prev, ...userData } : null))
-      toast.success('Profilo aggiornato con successo!')
-    } else {
-      const newUser: User = {
-        id: generateId(),
-        email: `user-${Date.now()}@example.com`,
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        age: userData.age || 25,
-        skillLevel: userData.skillLevel || 'intermedio',
-        location: userData.location || '',
-        joinedMatches: [],
-      }
-      setCurrentUser(() => newUser)
-      toast.success('Benvenuto su App Calcetto!')
+  const features: Feature[] = [
+    {
+      title: 'Find Your Match',
+      description: 'Browse matches by skill level, location, and time. Join games that fit your schedule.',
+      icon: <MapPin size={32} weight="duotone" className="text-primary" />
+    },
+    {
+      title: 'Track Progress',
+      description: 'Monitor your stats, achievements, and improvement over time with detailed analytics.',
+      icon: <TrendUp size={32} weight="duotone" className="text-secondary" />
+    },
+    {
+      title: 'Rate Venues',
+      description: 'Share your experience and help others find the best fields in your area.',
+      icon: <Star size={32} weight="duotone" className="text-accent" />
+    },
+    {
+      title: 'Secure Payments',
+      description: 'Safe and easy payment processing. Get automatic refunds if matches are cancelled.',
+      icon: <CheckCircle size={32} weight="duotone" className="text-primary" />
     }
-  }
-
-  const handleJoinMatch = (matchId: string) => {
-    if (!currentUser) {
-      toast.error('Devi completare il profilo per unirti a una partita')
-      setShowProfile(true)
-      return
-    }
-
-    setMatches((currentMatches) => {
-      if (!currentMatches) return []
-      
-      return currentMatches.map((match) => {
-        if (match.id === matchId) {
-          const newParticipant = {
-            userId: currentUser.id,
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            skillLevel: currentUser.skillLevel,
-            joinedAt: new Date().toISOString(),
-            paid: true,
-          }
-
-          return {
-            ...match,
-            currentPlayers: match.currentPlayers + 1,
-            participants: [...match.participants, newParticipant],
-            status: match.currentPlayers + 1 >= match.totalPlayers ? 'full' : 'open',
-          } as Match
-        }
-        return match
-      })
-    })
-
-    setCurrentUser((prev) => {
-      if (!prev) return null
-      return {
-        ...prev,
-        joinedMatches: [...prev.joinedMatches, matchId],
-      }
-    })
-
-    toast.success('Ti sei unito alla partita!', {
-      description: 'Riceverai una notifica prima della partita.',
-    })
-  }
-
-  const handleViewDetails = (match: Match) => {
-    setSelectedMatch(match)
-    setShowMatchDetails(true)
-  }
-
-  const handleOpenReviewDialog = (match: Match) => {
-    setMatchToReview(match)
-    setShowAddReview(true)
-  }
-
-  const handleSubmitReview = (reviewData: {
-    rating: number
-    comment: string
-    aspects: {
-      cleanliness: number
-      quality: number
-      facilities: number
-      location: number
-    }
-  }) => {
-    if (!currentUser || !matchToReview) return
-
-    const newReview: VenueReview = {
-      id: generateId(),
-      venueId: matchToReview.venue.id,
-      userId: currentUser.id,
-      userName: `${currentUser.firstName} ${currentUser.lastName}`,
-      matchId: matchToReview.id,
-      rating: reviewData.rating,
-      comment: reviewData.comment,
-      aspects: reviewData.aspects,
-      timestamp: new Date().toISOString(),
-      helpful: 0,
-    }
-
-    setReviews((currentReviews) => [...(currentReviews || []), newReview])
-
-    setMatches((currentMatches) => {
-      if (!currentMatches) return []
-      return currentMatches.map((match) => {
-        if (match.venue.id === matchToReview.venue.id) {
-          const venueReviews = [...(reviews || []), newReview].filter(
-            (r) => r.venueId === match.venue.id
-          )
-          const avgRating =
-            venueReviews.reduce((sum, r) => sum + r.rating, 0) / venueReviews.length
-
-          return {
-            ...match,
-            venue: {
-              ...match.venue,
-              rating: avgRating,
-              totalReviews: venueReviews.length,
-            },
-          }
-        }
-        return match
-      })
-    })
-
-    toast.success('Recensione pubblicata con successo!', {
-      description: 'Grazie per aver condiviso la tua esperienza.',
-    })
-  }
-
-  const handleViewVenueReviews = (venueId: string) => {
-    const match = (matches || []).find((m) => m.venue.id === venueId)
-    if (match) {
-      setSelectedVenue(match.venue)
-      setShowVenueReviews(true)
-    }
-  }
-
-  const handleMarkReviewHelpful = (reviewId: string) => {
-    setReviews((currentReviews) => {
-      if (!currentReviews) return []
-      return currentReviews.map((review) =>
-        review.id === reviewId ? { ...review, helpful: review.helpful + 1 } : review
-      )
-    })
-  }
-
-  const isPastMatch = (match: Match): boolean => {
-    const matchDate = new Date(match.date)
-    const matchTime = match.time.split(':')
-    matchDate.setHours(parseInt(matchTime[0]), parseInt(matchTime[1]))
-    return matchDate < new Date()
-  }
-
-  const canReviewMatch = (match: Match): boolean => {
-    if (!currentUser) return false
-    const isParticipant = currentUser.joinedMatches.includes(match.id)
-    const isPast = isPastMatch(match)
-    const hasReviewed = (reviews || []).some(
-      (r) => r.matchId === match.id && r.userId === currentUser.id
-    )
-    return isParticipant && isPast && !hasReviewed
-  }
-
-  const filteredMatches = (matches || []).filter((match) => {
-    if (skillFilter === 'all') return true
-    return match.skillLevel === skillFilter
-  })
-
-  const availableMatches = filteredMatches.filter(
-    (match) => !currentUser?.joinedMatches.includes(match.id)
-  )
-
-  const myMatches = filteredMatches.filter((match) =>
-    currentUser?.joinedMatches.includes(match.id)
-  )
+  ]
 
   return (
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-center" />
       
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <SoccerBall size={32} weight="fill" />
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">App Calcetto</h1>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowProfile(true)}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5" />
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 10px,
+              oklch(0.45 0.12 155 / 0.03) 10px,
+              oklch(0.45 0.12 155 / 0.03) 20px
+            )`
+          }}
+        />
+        
+        <div className="relative container mx-auto px-4 py-16 md:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <Badge 
+              variant="outline" 
+              className="mb-6 text-sm px-4 py-1.5 border-primary/20 bg-primary/5"
             >
-              <UserCircle size={32} weight="fill" />
-            </Button>
+              <Trophy size={16} weight="fill" className="mr-2 text-primary" />
+              Join the League Today
+            </Badge>
+            
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
+              Players{' '}
+              <span className="text-primary">League</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
+              Connect with players, organize matches, and take your game to the next level.
+              <br className="hidden md:block" />
+              Your ultimate platform for amateur soccer.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                size="lg" 
+                className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              >
+                Browse Matches
+                <ArrowRight size={20} weight="bold" className="ml-2" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
+              >
+                Create Profile
+              </Button>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          >
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+              >
+                <Card className="border-border/50 hover:border-primary/30 transition-all hover:shadow-lg">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-3 rounded-lg bg-primary/10 text-primary">
+                        {stat.icon}
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold mb-1">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground mb-2">{stat.label}</div>
+                    {stat.trend && (
+                      <div className="text-xs text-accent font-medium">
+                        {stat.trend}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+
+      <section className="py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Everything You Need
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Join a community of passionate players. Find matches, track your progress, and improve your game.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Card className="h-full border-border/50 hover:border-primary/30 transition-all hover:shadow-lg group">
+                  <CardContent className="pt-6">
+                    <div className="mb-4 transition-transform group-hover:scale-110 inline-block">
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </header>
+      </section>
 
-      <main className="container mx-auto px-4 py-8">
-        {!currentUser ? (
-          <div className="text-center py-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <SoccerBall size={64} weight="fill" className="mx-auto text-primary mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Benvenuto su App Calcetto</h2>
-              <p className="text-muted-foreground mb-6">
-                Completa il tuo profilo per iniziare a trovare partite
-              </p>
-              <Button
-                onClick={() => setShowProfile(true)}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-              >
-                Completa il Profilo
-              </Button>
-            </motion.div>
+      <section className="py-20 bg-gradient-to-b from-transparent via-primary/5 to-transparent">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="max-w-4xl mx-auto"
+          >
+            <Card className="border-primary/20 shadow-xl overflow-hidden">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
+                <CardContent className="relative pt-12 pb-12 text-center text-primary-foreground">
+                  <Trophy size={48} weight="duotone" className="mx-auto mb-6 opacity-90" />
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                    Ready to Play?
+                  </h2>
+                  <p className="text-lg mb-8 opacity-95 max-w-2xl mx-auto">
+                    Join thousands of players already on the platform. Create your profile and find your next match in minutes.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button 
+                      size="lg"
+                      className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    >
+                      Get Started
+                      <ArrowRight size={20} weight="bold" className="ml-2" />
+                    </Button>
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
+                    >
+                      Learn More
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      <footer className="py-12 border-t border-border/50">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-3">
+              <Trophy size={32} weight="fill" className="text-primary" />
+              <span className="text-xl font-bold">Players League</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              © 2024 Players League. Connecting players worldwide.
+            </div>
           </div>
-        ) : (
-          <Tabs defaultValue="available" className="space-y-6">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-              <TabsTrigger value="available">
-                Partite Disponibili
-                {availableMatches.length > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-accent text-accent-foreground rounded-full text-xs font-semibold">
-                    {availableMatches.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="my-matches">
-                Le Mie Partite
-                {myMatches.length > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-primary text-primary-foreground rounded-full text-xs font-semibold">
-                    {myMatches.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            <MatchFilters skillLevel={skillFilter} onSkillLevelChange={setSkillFilter} />
-
-            <TabsContent value="available" className="space-y-6">
-              {availableMatches.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <SoccerBall size={48} weight="thin" className="mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Nessuna partita disponibile</h3>
-                  <p className="text-muted-foreground">
-                    {skillFilter !== 'all'
-                      ? 'Prova a cambiare i filtri o torna più tardi.'
-                      : 'Torna più tardi per nuove partite.'}
-                  </p>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {availableMatches.map((match, index) => (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                    >
-                      <MatchCard
-                        match={match}
-                        onViewDetails={handleViewDetails}
-                        isJoined={false}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="my-matches" className="space-y-6">
-              {myMatches.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <SoccerBall size={48} weight="thin" className="mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Non sei iscritto a nessuna partita</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Unisciti a una partita per iniziare a giocare!
-                  </p>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myMatches.map((match, index) => (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                    >
-                      <div className="relative">
-                        <MatchCard match={match} onViewDetails={handleViewDetails} isJoined={true} />
-                        {canReviewMatch(match) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenReviewDialog(match)}
-                            className="w-full mt-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-                          >
-                            Valuta il Campo
-                          </Button>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
-
-      <MatchDetailsDialog
-        match={selectedMatch}
-        open={showMatchDetails}
-        onClose={() => setShowMatchDetails(false)}
-        onJoin={handleJoinMatch}
-        currentUser={currentUser ?? null}
-        onViewReviews={handleViewVenueReviews}
-        reviews={reviews || []}
-      />
-
-      <ProfileDialog
-        user={currentUser ?? null}
-        open={showProfile}
-        onClose={() => {
-          if (currentUser) {
-            setShowProfile(false)
-          }
-        }}
-        onSave={handleSaveProfile}
-      />
-
-      <AddReviewDialog
-        match={matchToReview}
-        open={showAddReview}
-        onClose={() => setShowAddReview(false)}
-        onSubmit={handleSubmitReview}
-      />
-
-      <VenueReviewsDialog
-        venue={selectedVenue}
-        reviews={reviews || []}
-        open={showVenueReviews}
-        onClose={() => setShowVenueReviews(false)}
-        onHelpful={handleMarkReviewHelpful}
-      />
+        </div>
+      </footer>
     </div>
   )
 }

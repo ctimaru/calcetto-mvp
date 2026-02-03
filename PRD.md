@@ -1,11 +1,11 @@
 # Planning Guide
 
-A platform that simplifies organizing amateur soccer matches by connecting players, facilitating payments, and coordinating match details in an intuitive interface.
+A modern platform that connects amateur soccer players, helps them discover and join matches, track their progress, and build a community around the sport they love.
 
 **Experience Qualities**: 
-1. **Immediate** - Users can find and join matches within seconds of opening the app
-2. **Trustworthy** - Clear information about matches, players, and venues creates confidence
-3. **Social** - The platform fosters connection through shared passion for the sport
+1. **Dynamic** - The interface feels alive with energy and motion, reflecting the excitement of the sport
+2. **Welcoming** - New players feel immediately at home with clear pathways to get started
+3. **Professional** - Despite being for amateurs, the platform feels polished and trustworthy
 
 **Complexity Level**: Light Application (multiple features with basic state)
 This is a light application because it manages multiple interconnected features (match browsing, user profiles, payments, match participation) with persistent state, but doesn't require complex multi-view navigation or advanced data relationships typical of enterprise applications.
