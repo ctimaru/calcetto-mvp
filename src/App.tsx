@@ -24,6 +24,7 @@ import { BrowseMatches } from '@/components/BrowseMatches'
 import { ProfileCreationDialog } from '@/components/ProfileCreationDialog'
 import { ProfileView } from '@/components/ProfileView'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
+import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { getDefaultVenues } from '@/lib/helpers'
 
 interface Stat {
@@ -44,6 +45,7 @@ function App() {
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false)
+  const [isActivePlayersDialogOpen, setIsActivePlayersDialogOpen] = useState(false)
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
@@ -269,7 +271,16 @@ function App() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
               >
-                <Card className="border-border/50 hover:border-primary/30 transition-all hover:shadow-lg">
+                <Card 
+                  className={`border-border/50 hover:border-primary/30 transition-all hover:shadow-lg ${
+                    stat.label === 'Active Players' ? 'cursor-pointer hover:scale-105' : ''
+                  }`}
+                  onClick={() => {
+                    if (stat.label === 'Active Players') {
+                      setIsActivePlayersDialogOpen(true)
+                    }
+                  }}
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="p-3 rounded-lg bg-primary/10 text-primary">
@@ -499,6 +510,11 @@ function App() {
         onClose={() => setIsCreateMatchDialogOpen(false)}
         onMatchCreated={handleMatchCreated}
         currentUser={currentUser || null}
+      />
+
+      <ActivePlayersDialog
+        open={isActivePlayersDialogOpen}
+        onClose={() => setIsActivePlayersDialogOpen(false)}
       />
     </div>
   )
