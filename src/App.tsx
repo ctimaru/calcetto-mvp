@@ -294,52 +294,135 @@ function App() {
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ 
+              duration: 0.7, 
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="max-w-6xl mx-auto"
           >
-            <Card className="border-primary/20 shadow-xl overflow-hidden">
-              <div className="grid md:grid-cols-2 gap-0">
-                <div className="relative order-2 md:order-1 h-64 md:h-auto">
-                  <img 
-                    src="https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80"
-                    alt="Kid playing soccer"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent" />
-                </div>
-                <div className="relative order-1 md:order-2">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
-                  <CardContent className="relative pt-12 pb-12 px-8 text-primary-foreground h-full flex flex-col justify-center">
-                    <Trophy size={48} weight="duotone" className="mb-6 opacity-90" />
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                      Ready to Play?
-                    </h2>
-                    <p className="text-lg mb-8 opacity-95">
-                      Join thousands of players already on the platform. Create your profile and find your next match in minutes.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Button 
-                        size="lg"
-                        className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                        onClick={() => setCurrentView('browse')}
+            <motion.div
+              whileHover={{ y: -8, scale: 1.01 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <Card className="border-primary/20 shadow-xl overflow-hidden relative group">
+                <div className="grid md:grid-cols-2 gap-0">
+                  <motion.div 
+                    className="relative order-2 md:order-1 h-64 md:h-auto overflow-hidden"
+                    initial={{ x: -50, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <motion.img 
+                      src="https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80"
+                      alt="Kid playing soccer"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    />
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent"
+                      initial={{ opacity: 0.5 }}
+                      whileHover={{ opacity: 0.3 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.div>
+                  <div className="relative order-1 md:order-2 overflow-hidden">
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80"
+                      initial={{ opacity: 0.9 }}
+                      whileHover={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"
+                      style={{
+                        background: 'radial-gradient(circle at 50% 50%, white 0%, transparent 70%)'
+                      }}
+                    />
+                    <CardContent className="relative pt-12 pb-12 px-8 text-primary-foreground h-full flex flex-col justify-center">
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        whileInView={{ scale: 1, rotate: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ 
+                          duration: 0.6, 
+                          delay: 0.4,
+                          type: "spring",
+                          stiffness: 200,
+                          damping: 15
+                        }}
                       >
-                        Inizia Ora
-                        <ArrowRight size={20} weight="bold" className="ml-2" />
-                      </Button>
-                      <Button 
-                        size="lg"
-                        variant="outline"
-                        className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
+                        <Trophy size={48} weight="duotone" className="mb-6 opacity-90" />
+                      </motion.div>
+                      <motion.h2 
+                        className="text-3xl md:text-4xl font-bold mb-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
                       >
-                        Scopri di Più
-                      </Button>
-                    </div>
-                  </CardContent>
+                        Ready to Play?
+                      </motion.h2>
+                      <motion.p 
+                        className="text-lg mb-8 opacity-95"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 0.95, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.6 }}
+                      >
+                        Join thousands of players already on the platform. Create your profile and find your next match in minutes.
+                      </motion.p>
+                      <motion.div 
+                        className="flex flex-col sm:flex-row gap-4"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.7 }}
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Button 
+                            size="lg"
+                            className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                            onClick={() => setCurrentView('browse')}
+                          >
+                            Inizia Ora
+                            <motion.div
+                              animate={{ x: [0, 5, 0] }}
+                              transition={{ 
+                                duration: 1.5, 
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            >
+                              <ArrowRight size={20} weight="bold" className="ml-2" />
+                            </motion.div>
+                          </Button>
+                        </motion.div>
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Button 
+                            size="lg"
+                            variant="outline"
+                            className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 px-8 py-6 text-lg"
+                          >
+                            Scopri di Più
+                          </Button>
+                        </motion.div>
+                      </motion.div>
+                    </CardContent>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           </motion.div>
         </div>
       </section>
