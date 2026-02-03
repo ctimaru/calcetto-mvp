@@ -2,7 +2,7 @@ import { type Match } from '@/lib/types'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { MapPin, Clock, CurrencyEur } from '@phosphor-icons/react'
+import { MapPin, Clock, CurrencyEur, Star } from '@phosphor-icons/react'
 import { SkillBadge } from './SkillBadge'
 import { PlayerCount } from './PlayerCount'
 import { formatDate, formatCurrency } from '@/lib/helpers'
@@ -26,7 +26,7 @@ export function MatchCard({ match, onViewDetails, isJoined = false }: MatchCardP
       <Card className="h-full flex flex-col overflow-hidden border-2 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer">
         <CardHeader className="pb-3" onClick={() => onViewDetails(match)}>
           <div className="flex items-start justify-between gap-2">
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-xl text-foreground mb-1">
                 {match.venue.name}
               </h3>
@@ -34,6 +34,19 @@ export function MatchCard({ match, onViewDetails, isJoined = false }: MatchCardP
                 <MapPin size={16} weight="fill" />
                 <span>{match.venue.city}</span>
               </div>
+              {match.venue.rating && match.venue.rating > 0 && (
+                <div className="flex items-center gap-1 mt-2">
+                  <Star size={16} weight="fill" className="text-secondary" />
+                  <span className="text-sm font-semibold text-foreground">
+                    {match.venue.rating.toFixed(1)}
+                  </span>
+                  {match.venue.totalReviews && match.venue.totalReviews > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ({match.venue.totalReviews} {match.venue.totalReviews === 1 ? 'recensione' : 'recensioni'})
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <SkillBadge level={match.skillLevel} />
           </div>

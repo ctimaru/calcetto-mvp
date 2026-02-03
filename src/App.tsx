@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match, type SkillLevel } from '@/lib/types'
+import { type User, type Match, type SkillLevel, type VenueReview, type Venue } from '@/lib/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { UserCircle, SoccerBall } from '@phosphor-icons/react'
@@ -8,6 +8,8 @@ import { MatchCard } from '@/components/MatchCard'
 import { MatchDetailsDialog } from '@/components/MatchDetailsDialog'
 import { ProfileDialog } from '@/components/ProfileDialog'
 import { MatchFilters } from '@/components/MatchFilters'
+import { AddReviewDialog } from '@/components/AddReviewDialog'
+import { VenueReviewsDialog } from '@/components/VenueReviewsDialog'
 import { generateId } from '@/lib/helpers'
 import { toast, Toaster } from 'sonner'
 import { motion } from 'framer-motion'
@@ -15,10 +17,15 @@ import { motion } from 'framer-motion'
 function App() {
   const [matches, setMatches] = useKV<Match[]>('matches', [])
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
+  const [reviews, setReviews] = useKV<VenueReview[]>('venue-reviews', [])
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [showMatchDetails, setShowMatchDetails] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [skillFilter, setSkillFilter] = useState<SkillLevel | 'all'>('all')
+  const [showAddReview, setShowAddReview] = useState(false)
+  const [matchToReview, setMatchToReview] = useState<Match | null>(null)
+  const [showVenueReviews, setShowVenueReviews] = useState(false)
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
 
   useEffect(() => {
     if (!currentUser) {
@@ -94,6 +101,100 @@ function App() {
   const handleViewDetails = (match: Match) => {
     setSelectedMatch(match)
     setShowMatchDetails(true)
+  }
+
+  const handleOpenReviewDialog = (match: Match) => {
+    setMatchToReview(match)
+    setShowAddReview(true)
+  }
+
+  const handleSubmitReview = (reviewData: {
+    rating: number
+    comment: string
+    aspects: {
+      cleanliness: number
+      quality: number
+      facilities: number
+      location: number
+    }
+  }) => {
+    if (!currentUser || !matchToReview) return
+
+    const newReview: VenueReview = {
+      id: generateId(),
+      venueId: matchToReview.venue.id,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      matchId: matchToReview.id,
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      aspects: reviewData.aspects,
+      timestamp: new Date().toISOString(),
+      helpful: 0,
+    }
+
+    setReviews((currentReviews) => [...(currentReviews || []), newReview])
+
+    setMatches((currentMatches) => {
+      if (!currentMatches) return []
+      return currentMatches.map((match) => {
+        if (match.venue.id === matchToReview.venue.id) {
+          const venueReviews = [...(reviews || []), newReview].filter(
+            (r) => r.venueId === match.venue.id
+          )
+          const avgRating =
+            venueReviews.reduce((sum, r) => sum + r.rating, 0) / venueReviews.length
+
+          return {
+            ...match,
+            venue: {
+              ...match.venue,
+              rating: avgRating,
+              totalReviews: venueReviews.length,
+            },
+          }
+        }
+        return match
+      })
+    })
+
+    toast.success('Recensione pubblicata con successo!', {
+      description: 'Grazie per aver condiviso la tua esperienza.',
+    })
+  }
+
+  const handleViewVenueReviews = (venueId: string) => {
+    const match = (matches || []).find((m) => m.venue.id === venueId)
+    if (match) {
+      setSelectedVenue(match.venue)
+      setShowVenueReviews(true)
+    }
+  }
+
+  const handleMarkReviewHelpful = (reviewId: string) => {
+    setReviews((currentReviews) => {
+      if (!currentReviews) return []
+      return currentReviews.map((review) =>
+        review.id === reviewId ? { ...review, helpful: review.helpful + 1 } : review
+      )
+    })
+  }
+
+  const isPastMatch = (match: Match): boolean => {
+    const matchDate = new Date(match.date)
+    const matchTime = match.time.split(':')
+    matchDate.setHours(parseInt(matchTime[0]), parseInt(matchTime[1]))
+    return matchDate < new Date()
+  }
+
+  const canReviewMatch = (match: Match): boolean => {
+    if (!currentUser) return false
+    const isParticipant = currentUser.joinedMatches.includes(match.id)
+    const isPast = isPastMatch(match)
+    const hasReviewed = (reviews || []).some(
+      (r) => r.matchId === match.id && r.userId === currentUser.id
+    )
+    return isParticipant && isPast && !hasReviewed
   }
 
   const filteredMatches = (matches || []).filter((match) => {
@@ -233,7 +334,19 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                     >
-                      <MatchCard match={match} onViewDetails={handleViewDetails} isJoined={true} />
+                      <div className="relative">
+                        <MatchCard match={match} onViewDetails={handleViewDetails} isJoined={true} />
+                        {canReviewMatch(match) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenReviewDialog(match)}
+                            className="w-full mt-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+                          >
+                            Valuta il Campo
+                          </Button>
+                        )}
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -249,6 +362,8 @@ function App() {
         onClose={() => setShowMatchDetails(false)}
         onJoin={handleJoinMatch}
         currentUser={currentUser ?? null}
+        onViewReviews={handleViewVenueReviews}
+        reviews={reviews || []}
       />
 
       <ProfileDialog
@@ -260,6 +375,21 @@ function App() {
           }
         }}
         onSave={handleSaveProfile}
+      />
+
+      <AddReviewDialog
+        match={matchToReview}
+        open={showAddReview}
+        onClose={() => setShowAddReview(false)}
+        onSubmit={handleSubmitReview}
+      />
+
+      <VenueReviewsDialog
+        venue={selectedVenue}
+        reviews={reviews || []}
+        open={showVenueReviews}
+        onClose={() => setShowVenueReviews(false)}
+        onHelpful={handleMarkReviewHelpful}
       />
     </div>
   )

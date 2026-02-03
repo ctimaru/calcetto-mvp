@@ -47,6 +47,13 @@ This is a light application because it manages multiple interconnected features 
 - **Progression**: Open joined match → View chat thread → Type message → Send → Message appears for all participants
 - **Success criteria**: Messages appear within 1 second for all participants
 
+### Venue Ratings and Reviews
+- **Functionality**: Users can rate and review venues after participating in matches
+- **Purpose**: Provides transparency about venue quality and helps users make informed decisions about which matches to join
+- **Trigger**: User views past matches they've participated in
+- **Progression**: View my past matches → Select completed match → Click "Valuta il Campo" → Rate overall experience (1-5 stars) → Rate specific aspects (cleanliness, quality, facilities, location) → Add optional comment → Submit review
+- **Success criteria**: Reviews appear on venue details immediately, average ratings update correctly across all matches at that venue, users can view all reviews for a venue
+
 ## Edge Case Handling
 
 - **No Matches Available**: Display encouraging empty state with "Check back soon" message and option to get notified
@@ -56,6 +63,9 @@ This is a light application because it manages multiple interconnected features 
 - **Offline Access**: Display cached match data with clear "offline" indicator and queue actions for when connection returns
 - **Full Match**: Prevent join attempts with waitlist option and notification when spots open
 - **Minimum Players Not Met**: Notification to participants 24h before with cancellation if threshold not reached
+- **No Reviews Yet**: Empty state encouraging users to be the first to review after playing at the venue
+- **Review Before Match Completion**: Prevent users from reviewing venues until after the match has occurred
+- **Multiple Reviews**: Limit users to one review per match at each venue to prevent spam
 
 ## Design Direction
 
@@ -117,12 +127,18 @@ Animations should feel athletic and responsive - quick, confident movements that
   - **Separator**: Divides match details sections
   - **ScrollArea**: Smooth scrolling for match lists and chat
   - **Toast**: Match confirmations and error messages using Sonner
+  - **Progress**: Visual indicator for rating distribution in venue reviews
+  - **Textarea**: Multi-line input for review comments
 
 - **Customizations**:
-  - **MatchCard**: Custom component combining Card with match-specific layout (venue, time, players count, skill level badges)
+  - **MatchCard**: Custom component combining Card with match-specific layout (venue, time, players count, skill level badges, venue rating)
   - **PlayerCount**: Visual indicator showing filled vs. total spots (e.g., "8/10" with progress bar)
   - **SkillBadge**: Color-coded badges (green for principiante, yellow for intermedio, red for avanzato)
   - **PaymentSheet**: Multi-step dialog for payment flow with Stripe-style input styling
+  - **StarRating**: Interactive and display-only star rating component supporting partial stars
+  - **VenueReviewCard**: Card displaying individual review with ratings, aspects, and helpful votes
+  - **AddReviewDialog**: Multi-section dialog for submitting venue reviews with overall and aspect ratings
+  - **VenueReviewsDialog**: Full-page dialog showing venue rating summary, distribution, and all reviews
 
 - **States**:
   - Buttons: Default has solid background, hover brightens (+10% lightness), active scales down 97%, disabled reduces opacity to 50%
@@ -135,12 +151,13 @@ Animations should feel athletic and responsive - quick, confident movements that
   - MapPin for venue locations
   - Clock for match times  
   - Users for participant counts
-  - Star for skill level
+  - Star for ratings and skill level
   - CreditCard for payment actions
   - Check/CheckCircle for confirmations
   - CalendarBlank for date selection
   - FunnelSimple for filters
   - ChatCircle for match chat
+  - ThumbsUp for marking reviews as helpful
 
 - **Spacing**:
   - Cards: p-6 for match cards, p-4 for compact variants

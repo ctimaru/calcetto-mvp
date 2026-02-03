@@ -21,6 +21,26 @@ export interface Venue {
     lat: number
     lng: number
   }
+  rating?: number
+  totalReviews?: number
+}
+
+export interface VenueReview {
+  id: string
+  venueId: string
+  userId: string
+  userName: string
+  matchId: string
+  rating: number
+  comment: string
+  aspects: {
+    cleanliness: number
+    quality: number
+    facilities: number
+    location: number
+  }
+  timestamp: string
+  helpful: number
 }
 
 export interface Match {
