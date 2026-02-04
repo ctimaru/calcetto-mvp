@@ -28,9 +28,8 @@ import { ProfileView } from '@/components/ProfileView'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
-import { VenueManagement } from '@/components/VenueManagement'
+import { VenueHub } from '@/components/VenueHub'
 import { VenueManagerLogin } from '@/components/VenueManagerLogin'
-import { VenueManagerDashboard } from '@/components/VenueManagerDashboard'
 import { MatchReminderService } from '@/components/MatchReminderService'
 import { getDefaultVenues } from '@/lib/helpers'
 
@@ -142,7 +141,8 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
-        <VenueManagerDashboard 
+        <VenueHub 
+          onBack={() => setCurrentView('home')}
           manager={venueManager}
           onLogout={handleManagerLogout}
         />
@@ -172,7 +172,7 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
-        <VenueManagement onBack={() => setCurrentView('home')} currentUserId={currentUser?.id} />
+        <VenueHub onBack={() => setCurrentView('home')} currentUserId={currentUser?.id} />
       </>
     )
   }
