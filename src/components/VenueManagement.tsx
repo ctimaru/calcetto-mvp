@@ -16,13 +16,15 @@ import {
   Trash,
   Buildings,
   ChartBar,
-  Users
+  Users,
+  CalendarBlank
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { AddVenueDialog } from '@/components/AddVenueDialog'
 import { EditVenueDialog } from '@/components/EditVenueDialog'
 import { VenueStatsDialog } from '@/components/VenueStatsDialog'
+import { VenueAvailabilityCalendar } from '@/components/VenueAvailabilityCalendar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +48,7 @@ export function VenueManagement({ onBack }: VenueManagementProps) {
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null)
   const [deletingVenue, setDeletingVenue] = useState<Venue | null>(null)
   const [statsVenue, setStatsVenue] = useState<Venue | null>(null)
+  const [calendarVenue, setCalendarVenue] = useState<Venue | null>(null)
 
   const filteredVenues = venues?.filter(venue => {
     const query = searchQuery.toLowerCase()
@@ -103,6 +106,10 @@ export function VenueManagement({ onBack }: VenueManagementProps) {
 
   const getTotalReviews = () => {
     return venues?.reduce((acc, v) => acc + (v.totalReviews || 0), 0) || 0
+  }
+
+  if (calendarVenue) {
+    return <VenueAvailabilityCalendar venue={calendarVenue} onClose={() => setCalendarVenue(null)} />
   }
 
   const cityStats = getCityStats()
@@ -322,6 +329,15 @@ export function VenueManagement({ onBack }: VenueManagementProps) {
                               </div>
                             </div>
                             <div className="flex gap-2 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setCalendarVenue(venue)}
+                                className="hover:bg-accent/10 hover:border-accent/30"
+                                title="Calendario Disponibilità"
+                              >
+                                <CalendarBlank size={18} weight="duotone" />
+                              </Button>
                               {venueReviews.length > 0 && (
                                 <Button
                                   variant="outline"

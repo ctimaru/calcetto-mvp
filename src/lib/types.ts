@@ -23,6 +23,26 @@ export interface Venue {
   }
   rating?: number
   totalReviews?: number
+  operatingHours?: {
+    start: string
+    end: string
+  }
+  pricePerHour?: number
+}
+
+export interface VenueBooking {
+  id: string
+  venueId: string
+  venueName: string
+  date: string
+  startTime: string
+  endTime: string
+  matchId?: string
+  status: 'available' | 'booked' | 'blocked'
+  bookedBy?: string
+  bookedByName?: string
+  notes?: string
+  createdAt: string
 }
 
 export interface VenueReview {

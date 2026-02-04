@@ -108,7 +108,9 @@ export const getDefaultVenues = () => {
       city: 'Milano',
       phone: '+39 02 4070707',
       rating: 4.5,
-      totalReviews: 42
+      totalReviews: 42,
+      operatingHours: { start: '08:00', end: '23:00' },
+      pricePerHour: 50
     },
     {
       id: generateId(),
@@ -117,7 +119,9 @@ export const getDefaultVenues = () => {
       city: 'Milano',
       phone: '+39 02 3311456',
       rating: 4.2,
-      totalReviews: 38
+      totalReviews: 38,
+      operatingHours: { start: '09:00', end: '22:00' },
+      pricePerHour: 45
     },
     {
       id: generateId(),
@@ -126,7 +130,9 @@ export const getDefaultVenues = () => {
       city: 'Roma',
       phone: '+39 06 7009988',
       rating: 4.7,
-      totalReviews: 65
+      totalReviews: 65,
+      operatingHours: { start: '08:00', end: '23:00' },
+      pricePerHour: 60
     },
     {
       id: generateId(),
@@ -135,7 +141,9 @@ export const getDefaultVenues = () => {
       city: 'Roma',
       phone: '+39 06 3612345',
       rating: 4.3,
-      totalReviews: 51
+      totalReviews: 51,
+      operatingHours: { start: '10:00', end: '22:00' },
+      pricePerHour: 40
     },
     {
       id: generateId(),
@@ -144,7 +152,9 @@ export const getDefaultVenues = () => {
       city: 'Torino',
       phone: '+39 011 3990900',
       rating: 4.1,
-      totalReviews: 29
+      totalReviews: 29,
+      operatingHours: { start: '09:00', end: '23:00' },
+      pricePerHour: 55
     },
     {
       id: generateId(),
@@ -153,7 +163,9 @@ export const getDefaultVenues = () => {
       city: 'Torino',
       phone: '+39 011 6634455',
       rating: 4.4,
-      totalReviews: 33
+      totalReviews: 33,
+      operatingHours: { start: '08:00', end: '22:00' },
+      pricePerHour: 48
     },
     {
       id: generateId(),
@@ -162,7 +174,9 @@ export const getDefaultVenues = () => {
       city: 'Napoli',
       phone: '+39 081 2395623',
       rating: 4.6,
-      totalReviews: 47
+      totalReviews: 47,
+      operatingHours: { start: '08:00', end: '23:00' },
+      pricePerHour: 42
     },
     {
       id: generateId(),
@@ -171,7 +185,9 @@ export const getDefaultVenues = () => {
       city: 'Napoli',
       phone: '+39 081 7701122',
       rating: 4.0,
-      totalReviews: 31
+      totalReviews: 31,
+      operatingHours: { start: '10:00', end: '22:00' },
+      pricePerHour: 38
     },
     {
       id: generateId(),
@@ -180,7 +196,9 @@ export const getDefaultVenues = () => {
       city: 'Firenze',
       phone: '+39 055 2341234',
       rating: 4.8,
-      totalReviews: 56
+      totalReviews: 56,
+      operatingHours: { start: '08:00', end: '23:00' },
+      pricePerHour: 65
     },
     {
       id: generateId(),
@@ -189,7 +207,9 @@ export const getDefaultVenues = () => {
       city: 'Firenze',
       phone: '+39 055 5500987',
       rating: 4.3,
-      totalReviews: 44
+      totalReviews: 44,
+      operatingHours: { start: '09:00', end: '22:00' },
+      pricePerHour: 52
     },
     {
       id: generateId(),
@@ -198,7 +218,9 @@ export const getDefaultVenues = () => {
       city: 'Bologna',
       phone: '+39 051 6191111',
       rating: 4.4,
-      totalReviews: 39
+      totalReviews: 39,
+      operatingHours: { start: '08:00', end: '23:00' },
+      pricePerHour: 47
     },
     {
       id: generateId(),
@@ -207,7 +229,9 @@ export const getDefaultVenues = () => {
       city: 'Bologna',
       phone: '+39 051 3331234',
       rating: 4.2,
-      totalReviews: 35
+      totalReviews: 35,
+      operatingHours: { start: '10:00', end: '22:00' },
+      pricePerHour: 43
     }
   ]
 }
