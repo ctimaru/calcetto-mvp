@@ -11,12 +11,24 @@ export interface User {
   joinedMatches: string[]
 }
 
+export interface VenueManager {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string
+  venueIds: string[]
+  createdAt: string
+}
+
 export interface Venue {
   id: string
   name: string
   address: string
   city: string
   phone: string
+  managerId?: string
+  managerName?: string
   coordinates?: {
     lat: number
     lng: number

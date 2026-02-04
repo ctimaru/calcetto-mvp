@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match } from '@/lib/types'
+import { type User, type Match, type VenueManager } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +29,8 @@ import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
 import { VenueManagement } from '@/components/VenueManagement'
+import { VenueManagerLogin } from '@/components/VenueManagerLogin'
+import { VenueManagerDashboard } from '@/components/VenueManagerDashboard'
 import { MatchReminderService } from '@/components/MatchReminderService'
 import { getDefaultVenues } from '@/lib/helpers'
 
@@ -46,8 +48,9 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues' | 'manager-login' | 'manager-dashboard'>('home')
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
+  const [venueManager, setVenueManager] = useState<VenueManager | null>(null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false)
   const [isActivePlayersDialogOpen, setIsActivePlayersDialogOpen] = useState(false)
@@ -111,6 +114,40 @@ function App() {
     toast.success(`Partita creata! ID: ${match.id}`)
     setIsCreateMatchDialogOpen(false)
     setCurrentView('browse')
+  }
+
+  const handleManagerLogin = (manager: VenueManager) => {
+    setVenueManager(manager)
+    setCurrentView('manager-dashboard')
+  }
+
+  const handleManagerLogout = () => {
+    setVenueManager(null)
+    setCurrentView('home')
+  }
+
+  if (currentView === 'manager-login') {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <VenueManagerLogin 
+          onLogin={handleManagerLogin}
+          onBack={() => setCurrentView('home')}
+        />
+      </>
+    )
+  }
+
+  if (currentView === 'manager-dashboard' && venueManager) {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <VenueManagerDashboard 
+          manager={venueManager}
+          onLogout={handleManagerLogout}
+        />
+      </>
+    )
   }
 
   if (currentView === 'browse') {
@@ -209,6 +246,14 @@ function App() {
               <span className="text-xl font-bold">Players League</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentView('manager-login')}
+                className="gap-2 hover:bg-primary/10 border-primary/30"
+              >
+                <Buildings size={20} weight="duotone" />
+                <span className="hidden md:inline">Manager</span>
+              </Button>
               {isAdmin && (
                 <Button
                   variant="outline"
@@ -216,7 +261,7 @@ function App() {
                   className="gap-2 hover:bg-primary/10 border-primary/30"
                 >
                   <Buildings size={20} weight="duotone" />
-                  <span className="hidden md:inline">Venues</span>
+                  <span className="hidden md:inline">Admin</span>
                 </Button>
               )}
               {currentUser && (
