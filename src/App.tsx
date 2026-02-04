@@ -29,7 +29,6 @@ import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
 import { VenueManagement } from '@/components/VenueManagement'
-import { NotificationsPanel } from '@/components/NotificationsPanel'
 import { MatchReminderService } from '@/components/MatchReminderService'
 import { getDefaultVenues } from '@/lib/helpers'
 
@@ -136,7 +135,7 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
-        <VenueManagement onBack={() => setCurrentView('home')} />
+        <VenueManagement onBack={() => setCurrentView('home')} currentUserId={currentUser?.id} />
       </>
     )
   }
@@ -222,7 +221,6 @@ function App() {
               )}
               {currentUser && (
                 <>
-                  <NotificationsPanel userId={currentUser.id} />
                   <Button
                     onClick={() => setIsCreateMatchDialogOpen(true)}
                     className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
