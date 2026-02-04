@@ -15,7 +15,8 @@ import {
   Star,
   CheckCircle,
   User as UserIcon,
-  Plus
+  Plus,
+  Broadcast
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'sonner'
@@ -25,6 +26,7 @@ import { ProfileCreationDialog } from '@/components/ProfileCreationDialog'
 import { ProfileView } from '@/components/ProfileView'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
+import { LiveMatchesView } from '@/components/LiveMatchesView'
 import { getDefaultVenues } from '@/lib/helpers'
 
 interface Stat {
@@ -41,14 +43,28 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live'>('home')
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false)
   const [isActivePlayersDialogOpen, setIsActivePlayersDialogOpen] = useState(false)
+  const [matches] = useKV<Match[]>('matches', [])
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
+  
+  const liveMatchesCount = matches?.filter(match => {
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    if (match.date !== todayStr) return false
+    
+    const [hours, minutes] = match.time.split(':').map(Number)
+    const matchStart = new Date(match.date)
+    matchStart.setHours(hours, minutes, 0, 0)
+    const matchEnd = new Date(matchStart.getTime() + 90 * 60000)
+    
+    return now >= matchStart && now <= matchEnd
+  }).length || 0
 
   useEffect(() => {
     const initializeVenues = async () => {
@@ -90,6 +106,15 @@ function App() {
     )
   }
 
+  if (currentView === 'live') {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <LiveMatchesView onBack={() => setCurrentView('home')} currentUser={currentUser || null} />
+      </>
+    )
+  }
+
   if (currentView === 'profile' && currentUser) {
     return (
       <>
@@ -112,8 +137,8 @@ function App() {
     },
     {
       label: 'Live Matches',
-      value: (activeMatches || 0).toString(),
-      icon: <Trophy size={24} weight="duotone" />,
+      value: liveMatchesCount.toString(),
+      icon: <Broadcast size={24} weight="duotone" />,
     },
     {
       label: 'Upcoming Games',
@@ -273,17 +298,21 @@ function App() {
               >
                 <Card 
                   className={`border-border/50 hover:border-primary/30 transition-all hover:shadow-lg ${
-                    stat.label === 'Active Players' ? 'cursor-pointer hover:scale-105' : ''
+                    stat.label === 'Active Players' || stat.label === 'Live Matches' ? 'cursor-pointer hover:scale-105' : ''
                   }`}
                   onClick={() => {
                     if (stat.label === 'Active Players') {
                       setIsActivePlayersDialogOpen(true)
+                    } else if (stat.label === 'Live Matches' && liveMatchesCount > 0) {
+                      setCurrentView('live')
                     }
                   }}
                 >
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="p-3 rounded-lg bg-primary/10 text-primary">
+                      <div className={`p-3 rounded-lg bg-primary/10 text-primary ${
+                        stat.label === 'Live Matches' && liveMatchesCount > 0 ? 'animate-pulse' : ''
+                      }`}>
                         {stat.icon}
                       </div>
                     </div>
@@ -292,6 +321,12 @@ function App() {
                     {stat.trend && (
                       <div className="text-xs text-accent font-medium">
                         {stat.trend}
+                      </div>
+                    )}
+                    {stat.label === 'Live Matches' && liveMatchesCount > 0 && (
+                      <div className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
+                        <Broadcast size={12} weight="fill" />
+                        Clicca per visualizzare
                       </div>
                     )}
                   </CardContent>

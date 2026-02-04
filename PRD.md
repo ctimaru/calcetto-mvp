@@ -12,6 +12,13 @@ This is a light application because it manages multiple interconnected features 
 
 ## Essential Features
 
+### Live Matches View
+- **Functionality**: Real-time display of currently active matches with live scores, player movements, and match events
+- **Purpose**: Creates excitement and engagement by showing the dynamic nature of the platform, gives users visibility into ongoing matches
+- **Trigger**: User clicks on the "Live Matches" stat card on home page (when count > 0) or navigates directly
+- **Progression**: Click live matches → View grid of all active matches with live scores → Select match for detailed view → See real-time match progress, elapsed time, score updates, player roster, and event timeline (goals, player joins)
+- **Success criteria**: Matches show within matches scheduled time window (start time to +90 minutes), scores and elapsed time update automatically, event timeline displays in chronological order, users can quickly identify match status (first half, halftime, second half)
+
 ### Match Creation
 - **Functionality**: Multi-step wizard for creating new matches with venue selection or creation
 - **Purpose**: Enables users to organize their own matches and invite other players
