@@ -47,7 +47,7 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues' | 'manager-login' | 'manager-dashboard'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues'>('home')
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
   const [venueManager, setVenueManager] = useState<VenueManager | null>(null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
@@ -58,6 +58,7 @@ function App() {
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isVenueLoginDialogOpen, setIsVenueLoginDialogOpen] = useState(false)
   
   const liveMatchesCount = matches?.filter(match => {
     const now = new Date()
@@ -115,40 +116,24 @@ function App() {
     setCurrentView('browse')
   }
 
+  const handleVenueAccess = async () => {
+    const user = await window.spark.user()
+    if (user?.isOwner) {
+      setCurrentView('venues')
+    } else {
+      setIsVenueLoginDialogOpen(true)
+    }
+  }
+
   const handleManagerLogin = (manager: VenueManager) => {
     setVenueManager(manager)
-    setCurrentView('manager-dashboard')
+    setIsVenueLoginDialogOpen(false)
+    setCurrentView('venues')
   }
 
-  const handleManagerLogout = () => {
+  const handleVenueLogout = () => {
     setVenueManager(null)
     setCurrentView('home')
-  }
-
-  if (currentView === 'manager-login') {
-    return (
-      <>
-        <Toaster richColors position="top-center" />
-        <VenueManagerLogin 
-          onLogin={handleManagerLogin}
-          onBack={() => setCurrentView('home')}
-        />
-      </>
-    )
-  }
-
-  if (currentView === 'manager-dashboard' && venueManager) {
-    return (
-      <>
-        <Toaster richColors position="top-center" />
-        <MatchReminderService />
-        <VenueHub 
-          onBack={handleManagerLogout}
-          manager={venueManager}
-          onLogout={handleManagerLogout}
-        />
-      </>
-    )
   }
 
   if (currentView === 'browse') {
@@ -174,7 +159,12 @@ function App() {
       <>
         <Toaster richColors position="top-center" />
         <MatchReminderService />
-        <VenueHub onBack={() => setCurrentView('home')} currentUserId={currentUser?.id} />
+        <VenueHub 
+          onBack={handleVenueLogout}
+          currentUserId={currentUser?.id}
+          manager={venueManager}
+          onLogout={handleVenueLogout}
+        />
       </>
     )
   }
@@ -250,22 +240,12 @@ function App() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => setCurrentView('manager-login')}
+                onClick={handleVenueAccess}
                 className="gap-2 hover:bg-primary/10 border-primary/30"
               >
                 <Buildings size={20} weight="duotone" />
-                <span className="hidden md:inline">Manager</span>
+                <span className="hidden md:inline">Venue Hub</span>
               </Button>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentView('venues')}
-                  className="gap-2 hover:bg-primary/10 border-primary/30"
-                >
-                  <Buildings size={20} weight="duotone" />
-                  <span className="hidden md:inline">Admin</span>
-                </Button>
-              )}
               {currentUser && (
                 <>
                   <Button
@@ -633,6 +613,12 @@ function App() {
       <ActivePlayersDialog
         open={isActivePlayersDialogOpen}
         onClose={() => setIsActivePlayersDialogOpen(false)}
+      />
+
+      <VenueManagerLogin 
+        open={isVenueLoginDialogOpen}
+        onLogin={handleManagerLogin}
+        onClose={() => setIsVenueLoginDialogOpen(false)}
       />
     </div>
   )

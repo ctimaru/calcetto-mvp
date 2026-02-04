@@ -2,19 +2,19 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Buildings, EnvelopeSimple, LockKey, User, Phone } from '@phosphor-icons/react'
-import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import type { VenueManager } from '@/lib/types'
 
 interface VenueManagerLoginProps {
+  open: boolean
   onLogin: (manager: VenueManager) => void
-  onBack: () => void
+  onClose: () => void
 }
 
-export function VenueManagerLogin({ onLogin, onBack }: VenueManagerLoginProps) {
+export function VenueManagerLogin({ open, onLogin, onClose }: VenueManagerLoginProps) {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -118,236 +118,200 @@ export function VenueManagerLogin({ onLogin, onBack }: VenueManagerLoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 py-3">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="gap-2"
-          >
-            <Buildings size={24} weight="duotone" />
-            Torna alla Home
-          </Button>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8 md:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md mx-auto"
-        >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-              <Buildings size={32} weight="duotone" className="text-primary" />
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              <Buildings size={24} weight="duotone" className="text-primary" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Gestione Venue</h1>
-            <p className="text-muted-foreground">
-              Accedi per gestire i tuoi campi e le prenotazioni
-            </p>
+            <div>
+              <DialogTitle className="text-2xl">Venue Hub</DialogTitle>
+              <DialogDescription>
+                Accedi per gestire i tuoi campi e prenotazioni
+              </DialogDescription>
+            </div>
           </div>
+        </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Accedi</TabsTrigger>
-              <TabsTrigger value="signup">Registrati</TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login">Accedi</TabsTrigger>
+            <TabsTrigger value="signup">Registrati</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Accedi al tuo account</CardTitle>
-                  <CardDescription>
-                    Inserisci le tue credenziali per accedere
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <div className="relative">
-                        <EnvelopeSimple 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="mario.rossi@esempio.it"
-                          className="pl-10"
-                          value={loginForm.email}
-                          onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+          <TabsContent value="login" className="mt-4">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">Email</Label>
+                <div className="relative">
+                  <EnvelopeSimple 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="mario.rossi@esempio.it"
+                    className="pl-10"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Password</Label>
-                      <div className="relative">
-                        <LockKey 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="login-password"
-                          type="password"
-                          placeholder="••••••••"
-                          className="pl-10"
-                          value={loginForm.password}
-                          onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Password</Label>
+                <div className="relative">
+                  <LockKey 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Accesso in corso...' : 'Accedi'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Accesso in corso...' : 'Accedi'}
+              </Button>
+            </form>
+          </TabsContent>
 
-            <TabsContent value="signup">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Crea un nuovo account</CardTitle>
-                  <CardDescription>
-                    Registrati per iniziare a gestire i tuoi venue
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-firstName">Nome</Label>
-                        <div className="relative">
-                          <User 
-                            size={20} 
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                          />
-                          <Input
-                            id="signup-firstName"
-                            type="text"
-                            placeholder="Mario"
-                            className="pl-10"
-                            value={signupForm.firstName}
-                            onChange={(e) => setSignupForm({ ...signupForm, firstName: e.target.value })}
-                            required
-                          />
-                        </div>
-                      </div>
+          <TabsContent value="signup" className="mt-4">
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-firstName">Nome</Label>
+                  <div className="relative">
+                    <User 
+                      size={20} 
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                    />
+                    <Input
+                      id="signup-firstName"
+                      type="text"
+                      placeholder="Mario"
+                      className="pl-10"
+                      value={signupForm.firstName}
+                      onChange={(e) => setSignupForm({ ...signupForm, firstName: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-lastName">Cognome</Label>
-                        <Input
-                          id="signup-lastName"
-                          type="text"
-                          placeholder="Rossi"
-                          value={signupForm.lastName}
-                          onChange={(e) => setSignupForm({ ...signupForm, lastName: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-lastName">Cognome</Label>
+                  <Input
+                    id="signup-lastName"
+                    type="text"
+                    placeholder="Rossi"
+                    value={signupForm.lastName}
+                    onChange={(e) => setSignupForm({ ...signupForm, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <div className="relative">
-                        <EnvelopeSimple 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="mario.rossi@esempio.it"
-                          className="pl-10"
-                          value={signupForm.email}
-                          onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <div className="relative">
+                  <EnvelopeSimple 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="mario.rossi@esempio.it"
+                    className="pl-10"
+                    value={signupForm.email}
+                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-phone">Telefono</Label>
-                      <div className="relative">
-                        <Phone 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="signup-phone"
-                          type="tel"
-                          placeholder="+39 123 456 7890"
-                          className="pl-10"
-                          value={signupForm.phone}
-                          onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-phone">Telefono</Label>
+                <div className="relative">
+                  <Phone 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+39 123 456 7890"
+                    className="pl-10"
+                    value={signupForm.phone}
+                    onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <div className="relative">
-                        <LockKey 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="signup-password"
-                          type="password"
-                          placeholder="••••••••"
-                          className="pl-10"
-                          value={signupForm.password}
-                          onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <div className="relative">
+                  <LockKey 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    value={signupForm.password}
+                    onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-confirmPassword">Conferma Password</Label>
-                      <div className="relative">
-                        <LockKey 
-                          size={20} 
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-                        />
-                        <Input
-                          id="signup-confirmPassword"
-                          type="password"
-                          placeholder="••••••••"
-                          className="pl-10"
-                          value={signupForm.confirmPassword}
-                          onChange={(e) => setSignupForm({ ...signupForm, confirmPassword: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirmPassword">Conferma Password</Label>
+                <div className="relative">
+                  <LockKey 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
+                  />
+                  <Input
+                    id="signup-confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    value={signupForm.confirmPassword}
+                    onChange={(e) => setSignupForm({ ...signupForm, confirmPassword: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Registrazione in corso...' : 'Registrati'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </div>
-    </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Registrazione in corso...' : 'Registrati'}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   )
 }
