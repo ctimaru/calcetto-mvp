@@ -89,6 +89,13 @@ This is a light application because it manages multiple interconnected features 
 - **Progression**: View my past matches → Select completed match → Click "Valuta il Campo" → Rate overall experience (1-5 stars) → Rate specific aspects (cleanliness, quality, facilities, location) → Add optional comment → Submit review
 - **Success criteria**: Reviews appear on venue details immediately, average ratings update correctly across all matches at that venue, users can view all reviews for a venue
 
+### Venue Management (Admin Only)
+- **Functionality**: Comprehensive venue management dashboard for platform administrators with add, edit, delete, and analytics capabilities
+- **Purpose**: Enables admins to manage the venue database, maintain accurate venue information, monitor venue performance, and identify quality issues
+- **Trigger**: Admin clicks "Venues" button in header (button only visible to app owner)
+- **Progression**: Click Venues → View dashboard with statistics (total venues, average rating, cities covered) → See city distribution chart → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue statistics (rating distribution, aspect ratings, recent reviews) → Delete venues with confirmation
+- **Success criteria**: Only app owner can access venue management, all CRUD operations persist correctly, statistics update in real-time, search filters venues instantly, venue stats show comprehensive analytics including review breakdowns and match history
+
 ## Edge Case Handling
 
 - **No Matches Available**: Display encouraging empty state with "Check back soon" message and option to get notified
@@ -110,6 +117,11 @@ This is a light application because it manages multiple interconnected features 
 - **Past Date Selection**: Prevent users from selecting dates in the past for new matches
 - **Unrealistic Player Counts**: Enforce min/max player limits (2-22) with helpful guidance for typical match sizes
 - **Transaction Filtering**: Future enhancement to filter transactions by type, status, or date range
+- **Non-Admin Venue Access**: Venue management button and page only visible/accessible to app owner
+- **Empty Venue List**: Display helpful empty state with call-to-action to add first venue
+- **No Search Results**: Show "no venues found" message when search query returns no results
+- **Venue Deletion with Active Matches**: Future enhancement to warn or prevent deletion of venues with upcoming matches
+- **No Venue Reviews**: Display empty state in venue stats when venue has no reviews yet
 
 ## Design Direction
 
@@ -188,6 +200,10 @@ Animations should feel athletic and responsive - quick, confident movements that
   - **ProfileCreationDialog**: Multi-step wizard for creating/editing user profiles with validation and smooth transitions
   - **ProfileView**: Comprehensive profile page showing user info, statistics, and match history with tabs for upcoming/past matches and transaction history
   - **CreateMatchDialog**: 3-step wizard for match creation (venue selection/creation, date/time, match details) with progress indicator and validation
+  - **VenueManagement**: Admin-only full-page venue management interface with statistics dashboard, city distribution chart, searchable venue list, and CRUD operations
+  - **AddVenueDialog**: Form dialog for adding new venues with validation (name, address, city, phone)
+  - **EditVenueDialog**: Form dialog for editing existing venue details with pre-populated fields
+  - **VenueStatsDialog**: Comprehensive analytics dialog showing venue statistics including rating distribution, aspect ratings, review list, and match count
 
 - **States**:
   - Buttons: Default has solid background, hover brightens (+10% lightness), active scales down 97%, disabled reduces opacity to 50%
@@ -227,6 +243,12 @@ Animations should feel athletic and responsive - quick, confident movements that
   - CurrencyEur for pricing information
   - LockKey for secure payment processing animation
   - ShieldCheck for payment security badge
+  - Buildings for venues and venue management
+  - ChartBar for statistics and analytics
+  - Trash for delete actions
+  - MagnifyingGlass for search functionality
+  - Phone for venue contact information
+  - Sparkle for quality/feature highlights
 
 - **Spacing**:
   - Cards: p-6 for match cards, p-4 for compact variants

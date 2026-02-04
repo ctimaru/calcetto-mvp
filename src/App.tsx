@@ -16,7 +16,8 @@ import {
   CheckCircle,
   User as UserIcon,
   Plus,
-  Broadcast
+  Broadcast,
+  Buildings
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'sonner'
@@ -27,6 +28,7 @@ import { ProfileView } from '@/components/ProfileView'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
+import { VenueManagement } from '@/components/VenueManagement'
 import { getDefaultVenues } from '@/lib/helpers'
 
 interface Stat {
@@ -43,7 +45,7 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues'>('home')
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false)
@@ -52,6 +54,7 @@ function App() {
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
+  const [isAdmin, setIsAdmin] = useState(false)
   
   const liveMatchesCount = matches?.filter(match => {
     const now = new Date()
@@ -74,6 +77,18 @@ function App() {
       }
     }
     initializeVenues()
+  }, [])
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const user = await window.spark.user()
+        setIsAdmin(user?.isOwner || false)
+      } catch (error) {
+        setIsAdmin(false)
+      }
+    }
+    checkAdmin()
   }, [])
 
   useEffect(() => {
@@ -111,6 +126,15 @@ function App() {
       <>
         <Toaster richColors position="top-center" />
         <LiveMatchesView onBack={() => setCurrentView('home')} currentUser={currentUser || null} />
+      </>
+    )
+  }
+
+  if (currentView === 'venues') {
+    return (
+      <>
+        <Toaster richColors position="top-center" />
+        <VenueManagement onBack={() => setCurrentView('home')} />
       </>
     )
   }
@@ -183,6 +207,16 @@ function App() {
               <span className="text-xl font-bold">Players League</span>
             </div>
             <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentView('venues')}
+                  className="gap-2 hover:bg-primary/10 border-primary/30"
+                >
+                  <Buildings size={20} weight="duotone" />
+                  <span className="hidden md:inline">Venues</span>
+                </Button>
+              )}
               {currentUser && (
                 <>
                   <Button
