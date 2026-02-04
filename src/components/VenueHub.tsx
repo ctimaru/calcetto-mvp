@@ -204,8 +204,9 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   }
 
   const handleMarkAllAsRead = async () => {
-    if (!adminUserId && !manager) return
-    await markAllNotificationsAsRead(adminUserId || manager?.id || '')
+    const userId = isManagerMode ? manager?.id : adminUserId
+    if (!userId) return
+    await markAllNotificationsAsRead(userId)
   }
 
   const handleLogout = () => {
@@ -222,7 +223,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
@@ -233,8 +234,9 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               >
                 <ArrowLeft size={20} weight="bold" />
               </Button>
+              <Buildings size={32} weight="duotone" className="text-primary" />
               <div>
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-xl font-bold">
                   {isManagerMode ? 'Dashboard Manager' : 'Gestione Venues'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -246,7 +248,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {!isManagerMode && (
+              {(!isManagerMode || (isManagerMode && venueRelatedNotifications.length > 0)) && (
                 <Button
                   variant="ghost"
                   onClick={() => setActiveTab('notifications')}
@@ -279,7 +281,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                 <Button
                   variant="outline"
                   onClick={handleLogout}
-                  className="gap-2"
+                  className="gap-2 hover:bg-primary/10 border-primary/30"
                 >
                   <SignOut size={20} />
                   <span className="hidden sm:inline">Esci</span>
@@ -297,7 +299,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="border-primary/20">
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-3 rounded-lg bg-primary/10">
@@ -317,7 +319,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <Card className="border-accent/20">
+            <Card className="border-accent/20 hover:border-accent/40 transition-colors">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-3 rounded-lg bg-accent/10">
@@ -335,7 +337,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            <Card className="border-secondary/20">
+            <Card className="border-secondary/20 hover:border-secondary/40 transition-colors">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-3 rounded-lg bg-secondary/10">
@@ -357,7 +359,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
           >
-            <Card className="border-primary/20">
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-3 rounded-lg bg-primary/10">
@@ -372,33 +374,34 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <TabsList className={`grid w-full max-w-2xl mx-auto ${isManagerMode ? 'grid-cols-3' : 'grid-cols-2'} mb-8`}>
+          <TabsList className={`grid w-full max-w-2xl mx-auto mb-8 ${
+            isManagerMode ? 'grid-cols-4' : 'grid-cols-2'
+          }`}>
             <TabsTrigger value="venues" className="gap-2">
               <Buildings size={18} weight="duotone" />
               Venues
             </TabsTrigger>
             {isManagerMode && (
-              <TabsTrigger value="bookings" className="gap-2">
-                <CalendarBlank size={18} weight="duotone" />
-                Prenotazioni
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="bookings" className="gap-2">
+                  <CalendarBlank size={18} weight="duotone" />
+                  Prenotazioni
+                </TabsTrigger>
+                <TabsTrigger value="reviews" className="gap-2">
+                  <Star size={18} weight="duotone" />
+                  Recensioni
+                </TabsTrigger>
+              </>
             )}
-            {isManagerMode ? (
-              <TabsTrigger value="reviews" className="gap-2">
-                <Star size={18} weight="duotone" />
-                Recensioni
-              </TabsTrigger>
-            ) : (
-              <TabsTrigger value="notifications" className="gap-2">
-                <Bell size={18} weight="duotone" />
-                Notifiche
-                {unreadNotificationsCount > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-5 px-1.5">
-                    {unreadNotificationsCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="notifications" className="gap-2">
+              <Bell size={18} weight="duotone" />
+              Notifiche
+              {unreadNotificationsCount > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 px-1.5">
+                  {unreadNotificationsCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="venues" className="space-y-8 mt-0">
@@ -682,124 +685,122 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             </>
           )}
 
-          {!isManagerMode && (
-            <TabsContent value="notifications" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Bell size={24} weight="duotone" className="text-primary" />
-                        Notifiche Venue
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {unreadNotificationsCount > 0 
-                          ? `${unreadNotificationsCount} nuove notifiche` 
-                          : 'Nessuna nuova notifica'}
-                      </p>
-                    </div>
-                    {unreadNotificationsCount > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleMarkAllAsRead}
-                        className="gap-2"
-                      >
-                        <CheckCircle size={16} weight="bold" />
-                        Segna tutte come lette
-                      </Button>
-                    )}
+          <TabsContent value="notifications" className="mt-0">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell size={24} weight="duotone" className="text-primary" />
+                      Notifiche Venue
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {unreadNotificationsCount > 0 
+                        ? `${unreadNotificationsCount} nuove notifiche` 
+                        : 'Nessuna nuova notifica'}
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[600px] pr-4">
-                    <div className="space-y-3">
-                      <AnimatePresence mode="popLayout">
-                        {venueRelatedNotifications.length === 0 ? (
+                  {unreadNotificationsCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleMarkAllAsRead}
+                      className="gap-2"
+                    >
+                      <CheckCircle size={16} weight="bold" />
+                      Segna tutte come lette
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[600px] pr-4">
+                  <div className="space-y-3">
+                    <AnimatePresence mode="popLayout">
+                      {venueRelatedNotifications.length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          className="text-center py-12 text-muted-foreground"
+                        >
+                          <Bell size={48} weight="thin" className="mx-auto mb-4 opacity-30" />
+                          <p>Nessuna notifica venue</p>
+                        </motion.div>
+                      ) : (
+                        venueRelatedNotifications.map((notification, index) => (
                           <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="text-center py-12 text-muted-foreground"
+                            key={notification.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.2, delay: index * 0.03 }}
                           >
-                            <Bell size={48} weight="thin" className="mx-auto mb-4 opacity-30" />
-                            <p>Nessuna notifica venue</p>
-                          </motion.div>
-                        ) : (
-                          venueRelatedNotifications.map((notification, index) => (
-                            <motion.div
-                              key={notification.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 20 }}
-                              transition={{ duration: 0.2, delay: index * 0.03 }}
+                            <Card 
+                              className={`border ${getNotificationColor(notification.type)} ${
+                                !notification.read ? 'border-l-4 border-l-accent' : ''
+                              } transition-all hover:shadow-md cursor-pointer`}
+                              onClick={() => !notification.read && handleMarkAsRead(notification.id)}
                             >
-                              <Card 
-                                className={`border ${getNotificationColor(notification.type)} ${
-                                  !notification.read ? 'border-l-4 border-l-accent' : ''
-                                } transition-all hover:shadow-md cursor-pointer`}
-                                onClick={() => !notification.read && handleMarkAsRead(notification.id)}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex gap-3">
-                                    <div className="text-2xl flex-shrink-0">
-                                      {getNotificationIcon(notification.type)}
+                              <CardContent className="p-4">
+                                <div className="flex gap-3">
+                                  <div className="text-2xl flex-shrink-0">
+                                    {getNotificationIcon(notification.type)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <h4 className={`font-semibold text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                        {notification.title}
+                                      </h4>
+                                      {!notification.read && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleMarkAsRead(notification.id)
+                                          }}
+                                        >
+                                          <Check size={14} weight="bold" />
+                                        </Button>
+                                      )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between gap-2 mb-1">
-                                        <h4 className={`font-semibold text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                          {notification.title}
-                                        </h4>
-                                        {!notification.read && (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 w-6 p-0"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              handleMarkAsRead(notification.id)
-                                            }}
-                                          >
-                                            <Check size={14} weight="bold" />
-                                          </Button>
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                      {notification.message}
+                                    </p>
+                                    {notification.metadata && (
+                                      <div className="text-xs text-muted-foreground space-y-1">
+                                        {notification.metadata.venueName && (
+                                          <div className="flex items-center gap-1">
+                                            <MapPin size={12} weight="fill" />
+                                            {notification.metadata.venueName}
+                                          </div>
+                                        )}
+                                        {notification.metadata.matchDate && notification.metadata.matchTime && (
+                                          <div className="flex items-center gap-1">
+                                            <CalendarBlank size={12} weight="fill" />
+                                            {new Date(notification.metadata.matchDate).toLocaleDateString('it-IT')} alle {notification.metadata.matchTime}
+                                          </div>
                                         )}
                                       </div>
-                                      <p className="text-sm text-muted-foreground mb-2">
-                                        {notification.message}
-                                      </p>
-                                      {notification.metadata && (
-                                        <div className="text-xs text-muted-foreground space-y-1">
-                                          {notification.metadata.venueName && (
-                                            <div className="flex items-center gap-1">
-                                              <MapPin size={12} weight="fill" />
-                                              {notification.metadata.venueName}
-                                            </div>
-                                          )}
-                                          {notification.metadata.matchDate && notification.metadata.matchTime && (
-                                            <div className="flex items-center gap-1">
-                                              <CalendarBlank size={12} weight="fill" />
-                                              {new Date(notification.metadata.matchDate).toLocaleDateString('it-IT')} alle {notification.metadata.matchTime}
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                      <div className="text-xs text-muted-foreground mt-2">
-                                        {getRelativeTime(notification.timestamp)}
-                                      </div>
+                                    )}
+                                    <div className="text-xs text-muted-foreground mt-2">
+                                      {getRelativeTime(notification.timestamp)}
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
-                          ))
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 

@@ -141,8 +141,9 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
+        <MatchReminderService />
         <VenueHub 
-          onBack={() => setCurrentView('home')}
+          onBack={handleManagerLogout}
           manager={venueManager}
           onLogout={handleManagerLogout}
         />
@@ -172,6 +173,7 @@ function App() {
     return (
       <>
         <Toaster richColors position="top-center" />
+        <MatchReminderService />
         <VenueHub onBack={() => setCurrentView('home')} currentUserId={currentUser?.id} />
       </>
     )
