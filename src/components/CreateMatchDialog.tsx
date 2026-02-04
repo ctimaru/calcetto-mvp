@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Calendar, Clock, Users, MapPin, CurrencyEur, Trophy, X } from '@phosphor-icons/react'
+import { Plus, Calendar, Users, MapPin, CurrencyEur, Trophy } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/helpers'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,9 +21,7 @@ interface CreateMatchDialogProps {
 
 export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }: CreateMatchDialogProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [venues, setVenues] = useKV<Venue[]>('venues', [])
-  const [newVenue, setNewVenue] = useState<Partial<Venue> | null>(null)
-  const [isCreatingVenue, setIsCreatingVenue] = useState(false)
+  const [venues] = useKV<Venue[]>('venues', [])
   
   const [formData, setFormData] = useState({
     venueId: '',
@@ -47,35 +45,8 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
         price: 5,
         description: ''
       })
-      setIsCreatingVenue(false)
-      setNewVenue(null)
     }
   }, [open])
-
-  const handleCreateVenue = () => {
-    if (!newVenue?.name || !newVenue?.address || !newVenue?.city || !newVenue?.phone) {
-      toast.error('Compila tutti i campi del campo sportivo')
-      return
-    }
-
-    const venue: Venue = {
-      id: generateId(),
-      name: newVenue.name,
-      address: newVenue.address,
-      city: newVenue.city,
-      phone: newVenue.phone,
-      rating: 0,
-      totalReviews: 0
-    }
-
-    const updatedVenues = [...(venues || []), venue]
-    setVenues(updatedVenues)
-    
-    setFormData({ ...formData, venueId: venue.id })
-    setIsCreatingVenue(false)
-    setNewVenue(null)
-    toast.success('Campo sportivo creato con successo')
-  }
 
   const handleNext = () => {
     if (step === 1) {
@@ -206,116 +177,35 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
                   Scegli il Campo
                 </h3>
                 
-                {!isCreatingVenue ? (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="venue">Campo Sportivo</Label>
-                      <Select
-                        value={formData.venueId}
-                        onValueChange={(value) => setFormData({ ...formData, venueId: value })}
-                      >
-                        <SelectTrigger id="venue" className="mt-2">
-                          <SelectValue placeholder="Seleziona un campo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(venues || []).map((venue) => (
-                            <SelectItem key={venue.id} value={venue.id}>
-                              {venue.name} - {venue.city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {selectedVenue && (
-                      <div className="p-4 bg-muted rounded-lg space-y-2">
-                        <p className="font-medium">{selectedVenue.name}</p>
-                        <p className="text-sm text-muted-foreground">{selectedVenue.address}</p>
-                        <p className="text-sm text-muted-foreground">{selectedVenue.city}</p>
-                        <p className="text-sm text-muted-foreground">Tel: {selectedVenue.phone}</p>
-                      </div>
-                    )}
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setIsCreatingVenue(true)}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="venue">Campo Sportivo</Label>
+                    <Select
+                      value={formData.venueId}
+                      onValueChange={(value) => setFormData({ ...formData, venueId: value })}
                     >
-                      <Plus size={20} className="mr-2" />
-                      Aggiungi Nuovo Campo
-                    </Button>
+                      <SelectTrigger id="venue" className="mt-2">
+                        <SelectValue placeholder="Seleziona un campo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(venues || []).map((venue) => (
+                          <SelectItem key={venue.id} value={venue.id}>
+                            {venue.name} - {venue.city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium">Nuovo Campo Sportivo</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setIsCreatingVenue(false)
-                          setNewVenue(null)
-                        }}
-                      >
-                        <X size={20} />
-                      </Button>
-                    </div>
 
-                    <div>
-                      <Label htmlFor="venue-name">Nome Campo *</Label>
-                      <Input
-                        id="venue-name"
-                        value={newVenue?.name || ''}
-                        onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })}
-                        placeholder="es. Centro Sportivo San Siro"
-                        className="mt-2"
-                      />
+                  {selectedVenue && (
+                    <div className="p-4 bg-muted rounded-lg space-y-2">
+                      <p className="font-medium">{selectedVenue.name}</p>
+                      <p className="text-sm text-muted-foreground">{selectedVenue.address}</p>
+                      <p className="text-sm text-muted-foreground">{selectedVenue.city}</p>
+                      <p className="text-sm text-muted-foreground">Tel: {selectedVenue.phone}</p>
                     </div>
-
-                    <div>
-                      <Label htmlFor="venue-address">Indirizzo *</Label>
-                      <Input
-                        id="venue-address"
-                        value={newVenue?.address || ''}
-                        onChange={(e) => setNewVenue({ ...newVenue, address: e.target.value })}
-                        placeholder="es. Via dello Sport, 123"
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="venue-city">Città *</Label>
-                      <Input
-                        id="venue-city"
-                        value={newVenue?.city || ''}
-                        onChange={(e) => setNewVenue({ ...newVenue, city: e.target.value })}
-                        placeholder="es. Milano"
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="venue-phone">Telefono *</Label>
-                      <Input
-                        id="venue-phone"
-                        value={newVenue?.phone || ''}
-                        onChange={(e) => setNewVenue({ ...newVenue, phone: e.target.value })}
-                        placeholder="es. +39 02 1234567"
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <Button
-                      type="button"
-                      onClick={handleCreateVenue}
-                      className="w-full bg-accent hover:bg-accent/90"
-                    >
-                      Salva Campo
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
