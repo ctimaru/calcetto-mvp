@@ -29,6 +29,8 @@ import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
 import { VenueManagement } from '@/components/VenueManagement'
+import { NotificationsPanel } from '@/components/NotificationsPanel'
+import { MatchReminderService } from '@/components/MatchReminderService'
 import { getDefaultVenues } from '@/lib/helpers'
 
 interface Stat {
@@ -198,6 +200,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-center" />
+      <MatchReminderService />
       
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 py-3">
@@ -219,6 +222,7 @@ function App() {
               )}
               {currentUser && (
                 <>
+                  <NotificationsPanel userId={currentUser.id} />
                   <Button
                     onClick={() => setIsCreateMatchDialogOpen(true)}
                     className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2"

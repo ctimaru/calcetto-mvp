@@ -99,6 +99,38 @@ export const getTransactionStatusColor = (status: string): string => {
   return colors[status] || 'bg-gray-500/10 text-gray-700 border-gray-500/20'
 }
 
+export const parseTime = (timeString: string): { hours: number; minutes: number } => {
+  const [hours, minutes] = timeString.split(':').map(Number)
+  return { hours, minutes }
+}
+
+export const addMinutesToTime = (timeString: string, minutesToAdd: number): string => {
+  const { hours, minutes } = parseTime(timeString)
+  const totalMinutes = hours * 60 + minutes + minutesToAdd
+  const newHours = Math.floor(totalMinutes / 60) % 24
+  const newMinutes = totalMinutes % 60
+  return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`
+}
+
+export const isTimeOverlap = (
+  start1: string,
+  end1: string,
+  start2: string,
+  end2: string
+): boolean => {
+  const s1 = parseTime(start1)
+  const e1 = parseTime(end1)
+  const s2 = parseTime(start2)
+  const e2 = parseTime(end2)
+
+  const start1Minutes = s1.hours * 60 + s1.minutes
+  const end1Minutes = e1.hours * 60 + e1.minutes
+  const start2Minutes = s2.hours * 60 + s2.minutes
+  const end2Minutes = e2.hours * 60 + e2.minutes
+
+  return (start1Minutes < end2Minutes && end1Minutes > start2Minutes)
+}
+
 export const getDefaultVenues = () => {
   return [
     {

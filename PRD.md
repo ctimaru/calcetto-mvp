@@ -96,6 +96,20 @@ This is a light application because it manages multiple interconnected features 
 - **Progression**: Click Venues → View dashboard with statistics (total venues, average rating, cities covered) → See city distribution chart → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue statistics (rating distribution, aspect ratings, recent reviews) → Delete venues with confirmation
 - **Success criteria**: Only app owner can access venue management, all CRUD operations persist correctly, statistics update in real-time, search filters venues instantly, venue stats show comprehensive analytics including review breakdowns and match history
 
+### Booking Conflict Detection
+- **Functionality**: Automatic detection of scheduling conflicts when creating matches or bookings at the same venue for overlapping time slots (assuming 90-minute match duration)
+- **Purpose**: Prevents double-booking of venues, ensures match organizers are aware of conflicts before finalizing bookings, maintains data integrity of the booking system
+- **Trigger**: User attempts to create a match at a venue where another match or booking already exists for the same date and overlapping time
+- **Progression**: Complete match creation steps → Submit match → System detects conflict → Conflict dialog displays showing conflicting matches/bookings with full details → User can cancel or proceed anyway (admin override)
+- **Success criteria**: All conflicts detected accurately within 500ms, conflict details show venue name, date, time range, and affected matches, system creates booking records to track venue usage, no false positives or missed conflicts
+
+### Notification System
+- **Functionality**: Comprehensive push notification system for match-related events including creation, player joins, match full status, cancellations, match reminders (1 hour before), and booking conflicts
+- **Purpose**: Keeps users informed of important match updates, increases engagement and attendance rates, provides real-time communication about booking conflicts
+- **Trigger**: Various automated events (match created, player joined, match full, match approaching, conflict detected)
+- **Progression**: Event occurs → System creates notification record → Notification appears in bell icon with badge count → User clicks bell → Notification panel slides in → View all notifications with timestamps → Click notification to mark as read → Click "Mark all as read" to clear unread status
+- **Success criteria**: Notifications deliver instantly (<1s), unread count displays accurately on bell icon, notification panel shows chronological list with proper icons and colors, users can mark individual or all notifications as read, notifications persist across sessions, match reminders sent automatically 1 hour before match time
+
 ## Edge Case Handling
 
 - **No Matches Available**: Display encouraging empty state with "Check back soon" message and option to get notified
@@ -122,6 +136,11 @@ This is a light application because it manages multiple interconnected features 
 - **No Search Results**: Show "no venues found" message when search query returns no results
 - **Venue Deletion with Active Matches**: Future enhancement to warn or prevent deletion of venues with upcoming matches
 - **No Venue Reviews**: Display empty state in venue stats when venue has no reviews yet
+- **Booking Conflict Detected**: Display detailed conflict dialog showing all overlapping matches and bookings, allow admin override to proceed anyway, send notifications to affected users
+- **Multiple Simultaneous Bookings**: System uses transaction-safe operations to prevent race conditions when multiple users attempt to book the same time slot
+- **No Notifications**: Display empty state with bell icon and encouraging message in notification panel
+- **Notification Overflow**: Panel scrolls smoothly with infinite scroll, older notifications remain accessible
+- **Failed Notification Delivery**: System retries notification creation and logs errors for debugging
 
 ## Design Direction
 

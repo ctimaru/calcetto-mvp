@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match, type Venue, type SkillLevel } from '@/lib/types'
+import { type User, type Match, type Venue, type SkillLevel, type BookingConflict } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,9 @@ import { Plus, Calendar, Users, MapPin, CurrencyEur, Trophy } from '@phosphor-ic
 import { toast } from 'sonner'
 import { generateId } from '@/lib/helpers'
 import { motion, AnimatePresence } from 'framer-motion'
+import { checkBookingConflicts, createBookingWithConflictCheck } from '@/lib/booking-conflicts'
+import { notifyMatchCreated } from '@/lib/notifications'
+import { BookingConflictDialog } from './BookingConflictDialog'
 
 interface CreateMatchDialogProps {
   open: boolean
@@ -22,6 +25,9 @@ interface CreateMatchDialogProps {
 export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }: CreateMatchDialogProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [venues] = useKV<Venue[]>('venues', [])
+  const [conflict, setConflict] = useState<BookingConflict | null>(null)
+  const [showConflictDialog, setShowConflictDialog] = useState(false)
+  const [pendingMatch, setPendingMatch] = useState<Match | null>(null)
   
   const [formData, setFormData] = useState({
     venueId: '',
@@ -100,7 +106,50 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
       return
     }
 
-    const match: Match = {
+    const detectedConflict = await checkBookingConflicts(
+      formData.venueId,
+      formData.date,
+      formData.time
+    )
+
+    if (detectedConflict) {
+      setConflict(detectedConflict)
+      setShowConflictDialog(true)
+
+      const match: Match = {
+        id: generateId(),
+        date: formData.date,
+        time: formData.time,
+        venue,
+        totalPlayers: formData.totalPlayers,
+        currentPlayers: 1,
+        skillLevel: formData.skillLevel,
+        price: formData.price,
+        status: 'open',
+        participants: [{
+          userId: currentUser.id,
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          skillLevel: currentUser.skillLevel,
+          joinedAt: new Date().toISOString(),
+          paid: true
+        }],
+        createdBy: currentUser.id
+      }
+      setPendingMatch(match)
+      return
+    }
+
+    await createMatch()
+  }
+
+  const createMatch = async (forceCreate = false) => {
+    if (!currentUser) return
+
+    const venue = (venues || []).find(v => v.id === formData.venueId)
+    if (!venue) return
+
+    const match: Match = pendingMatch || {
       id: generateId(),
       date: formData.date,
       time: formData.time,
@@ -121,6 +170,17 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
       createdBy: currentUser.id
     }
 
+    if (!forceCreate) {
+      await createBookingWithConflictCheck(
+        match.venue.id,
+        match.venue.name,
+        match.date,
+        match.time,
+        match.id,
+        currentUser.id
+      )
+    }
+
     const matches = await window.spark.kv.get<Match[]>('matches') || []
     await window.spark.kv.set('matches', [...matches, match])
 
@@ -130,7 +190,10 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
     }
     await window.spark.kv.set('current-user', updatedUser)
 
-    toast.success('Partita creata con successo!')
+    await notifyMatchCreated(match, currentUser)
+
+    setPendingMatch(null)
+    setConflict(null)
     onMatchCreated(match)
     onClose()
   }
@@ -383,6 +446,22 @@ export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }
           )}
         </div>
       </DialogContent>
+
+      <BookingConflictDialog
+        open={showConflictDialog}
+        onClose={() => {
+          setShowConflictDialog(false)
+          setConflict(null)
+          setPendingMatch(null)
+        }}
+        conflict={conflict}
+        onProceedAnyway={() => createMatch(true)}
+        onCancel={() => {
+          setShowConflictDialog(false)
+          setConflict(null)
+          setPendingMatch(null)
+        }}
+      />
     </Dialog>
   )
 }

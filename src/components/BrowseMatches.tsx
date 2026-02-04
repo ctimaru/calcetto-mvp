@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { formatDate, generateId } from '@/lib/helpers'
+import { notifyPlayerJoined, notifyMatchFull } from '@/lib/notifications'
 
 interface BrowseMatchesProps {
   onBack: () => void
@@ -96,7 +97,7 @@ export function BrowseMatches({ onBack, currentUser }: BrowseMatchesProps) {
     setSelectedMatch(null)
   }
 
-  const handlePaymentConfirm = (paymentMethod: 'card' | 'paypal' | 'bank_transfer', cardLast4?: string) => {
+  const handlePaymentConfirm = async (paymentMethod: 'card' | 'paypal' | 'bank_transfer', cardLast4?: string) => {
     if (!matchToJoin || !currentUser) return
 
     const newParticipant: Participant = {
@@ -108,14 +109,18 @@ export function BrowseMatches({ onBack, currentUser }: BrowseMatchesProps) {
       paid: true
     }
 
+    const isFull = matchToJoin.currentPlayers + 1 >= matchToJoin.totalPlayers
+
+    const updatedMatch: Match = {
+      ...matchToJoin,
+      currentPlayers: matchToJoin.currentPlayers + 1,
+      participants: [...matchToJoin.participants, newParticipant],
+      status: (isFull ? 'full' : 'open') as 'open' | 'full' | 'cancelled'
+    }
+
     const updatedMatches = (matches || []).map(m => {
       if (m.id === matchToJoin.id) {
-        return {
-          ...m,
-          currentPlayers: m.currentPlayers + 1,
-          participants: [...m.participants, newParticipant],
-          status: (m.currentPlayers + 1 >= m.totalPlayers ? 'full' : 'open') as 'open' | 'full' | 'cancelled'
-        }
+        return updatedMatch
       }
       return m
     })
@@ -151,6 +156,12 @@ export function BrowseMatches({ onBack, currentUser }: BrowseMatchesProps) {
     setUsers(updatedUsers)
     setTransactions((currentTransactions) => [...(currentTransactions || []), newTransaction])
     
+    await notifyPlayerJoined(updatedMatch, currentUser)
+
+    if (isFull) {
+      await notifyMatchFull(updatedMatch)
+    }
+
     setMatchToJoin(null)
     toast.success(`Ti sei unito alla partita presso ${matchToJoin.venue.name}!`)
   }

@@ -117,3 +117,41 @@ export interface Transaction {
     refundReason?: string
   }
 }
+
+export type NotificationType = 
+  | 'match_created' 
+  | 'match_joined' 
+  | 'match_cancelled' 
+  | 'match_full' 
+  | 'match_reminder' 
+  | 'booking_conflict'
+  | 'payment_received'
+  | 'payment_refunded'
+
+export interface Notification {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  message: string
+  matchId?: string
+  read: boolean
+  timestamp: string
+  actionUrl?: string
+  metadata?: {
+    venueName?: string
+    matchDate?: string
+    matchTime?: string
+    conflictingMatchId?: string
+  }
+}
+
+export interface BookingConflict {
+  venueId: string
+  venueName: string
+  date: string
+  startTime: string
+  endTime: string
+  conflictingMatches: string[]
+  conflictingBookings: string[]
+}
