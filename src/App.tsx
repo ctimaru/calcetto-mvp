@@ -59,6 +59,7 @@ function App() {
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isVenueLoginDialogOpen, setIsVenueLoginDialogOpen] = useState(false)
+  const [hasChosenRole, setHasChosenRole] = useKV<boolean>('has-chosen-role', false)
   
   const liveMatchesCount = matches?.filter(match => {
     const now = new Date()
@@ -95,15 +96,20 @@ function App() {
     checkAdmin()
   }, [])
 
-  useEffect(() => {
-    if (!currentUser) {
-      setIsProfileDialogOpen(true)
-    }
-  }, [])
+
 
   const handleProfileCreated = (user: User) => {
     setCurrentUser(user)
+    setHasChosenRole(true)
     setIsProfileDialogOpen(false)
+  }
+
+  const handlePlayerAccess = () => {
+    setIsProfileDialogOpen(true)
+  }
+
+  const handleManagerAccess = () => {
+    setIsVenueLoginDialogOpen(true)
   }
 
   const handleUserUpdate = (updatedUser: User) => {
@@ -116,9 +122,8 @@ function App() {
     setCurrentView('browse')
   }
 
-  const handleVenueAccess = async () => {
-    const user = await window.spark.user()
-    if (user?.isOwner) {
+  const handleVenueAccess = () => {
+    if (venueManager) {
       setCurrentView('venues')
     } else {
       setIsVenueLoginDialogOpen(true)
@@ -127,12 +132,14 @@ function App() {
 
   const handleManagerLogin = (manager: VenueManager) => {
     setVenueManager(manager)
+    setHasChosenRole(true)
     setIsVenueLoginDialogOpen(false)
     setCurrentView('venues')
   }
 
   const handleVenueLogout = () => {
     setVenueManager(null)
+    setHasChosenRole(false)
     setCurrentView('home')
   }
 
@@ -179,6 +186,118 @@ function App() {
           onUserUpdate={handleUserUpdate}
         />
       </>
+    )
+  }
+
+  if (!hasChosenRole && !currentUser && !venueManager) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Toaster richColors position="top-center" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5" />
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 10px,
+              oklch(0.45 0.12 155 / 0.03) 10px,
+              oklch(0.45 0.12 155 / 0.03) 20px
+            )`
+          }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative container mx-auto px-4 max-w-4xl"
+        >
+          <div className="text-center mb-12">
+            <Trophy size={64} weight="fill" className="text-primary mx-auto mb-6" />
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight">
+              Benvenuto su <span className="text-primary">Players League</span>
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Scegli come vuoi accedere alla piattaforma
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ y: -8, scale: 1.02 }}
+            >
+              <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all cursor-pointer h-full group"
+                onClick={handlePlayerAccess}
+              >
+                <CardContent className="pt-8 pb-8 px-6 text-center">
+                  <div className="mb-6 p-4 bg-primary/10 rounded-full inline-block group-hover:scale-110 transition-transform">
+                    <UserIcon size={48} weight="duotone" className="text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-3">Sono un Giocatore</h2>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Crea il tuo profilo, trova partite nella tua zona e unisciti alla community
+                  </p>
+                  <Button 
+                    size="lg"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    Accedi come Giocatore
+                    <ArrowRight size={20} weight="bold" className="ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              whileHover={{ y: -8, scale: 1.02 }}
+            >
+              <Card className="border-2 border-secondary/20 hover:border-secondary/50 transition-all cursor-pointer h-full group"
+                onClick={handleManagerAccess}
+              >
+                <CardContent className="pt-8 pb-8 px-6 text-center">
+                  <div className="mb-6 p-4 bg-secondary/10 rounded-full inline-block group-hover:scale-110 transition-transform">
+                    <Buildings size={48} weight="duotone" className="text-secondary" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-3">Sono un Manager</h2>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    Gestisci venue, monitora prenotazioni e amministra la piattaforma
+                  </p>
+                  <Button 
+                    size="lg"
+                    className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                  >
+                    Accedi come Manager
+                    <ArrowRight size={20} weight="bold" className="ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            Potrai sempre tornare alla schermata principale e cambiare modalità
+          </p>
+        </motion.div>
+
+        <ProfileCreationDialog
+          open={isProfileDialogOpen}
+          onClose={() => setIsProfileDialogOpen(false)}
+          onProfileCreated={handleProfileCreated}
+        />
+
+        <VenueManagerLogin 
+          open={isVenueLoginDialogOpen}
+          onLogin={handleManagerLogin}
+          onClose={() => setIsVenueLoginDialogOpen(false)}
+        />
+      </div>
     )
   }
 
@@ -238,6 +357,23 @@ function App() {
               <span className="text-xl font-bold">Players League</span>
             </div>
             <div className="flex items-center gap-2">
+              {(currentUser || venueManager) && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (venueManager) {
+                      handleVenueLogout()
+                    } else {
+                      setCurrentUser(null)
+                      setHasChosenRole(false)
+                    }
+                  }}
+                  className="gap-2 hover:bg-destructive/10 text-destructive"
+                >
+                  <ArrowRight size={20} weight="bold" className="rotate-180" />
+                  <span className="hidden sm:inline">Esci</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleVenueAccess}
@@ -338,7 +474,7 @@ function App() {
                   size="lg" 
                   variant="outline"
                   className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
-                  onClick={() => setIsProfileDialogOpen(true)}
+                  onClick={handlePlayerAccess}
                 >
                   Crea Profilo
                 </Button>
@@ -594,10 +730,13 @@ function App() {
       </footer>
 
       <ProfileCreationDialog
-        open={isProfileDialogOpen && !currentUser}
+        open={isProfileDialogOpen}
         onClose={() => {
           if (currentUser) {
             setIsProfileDialogOpen(false)
+          } else {
+            setIsProfileDialogOpen(false)
+            setHasChosenRole(false)
           }
         }}
         onProfileCreated={handleProfileCreated}

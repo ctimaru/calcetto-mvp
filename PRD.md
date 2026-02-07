@@ -89,12 +89,19 @@ This is a light application because it manages multiple interconnected features 
 - **Progression**: View my past matches → Select completed match → Click "Valuta il Campo" → Rate overall experience (1-5 stars) → Rate specific aspects (cleanliness, quality, facilities, location) → Add optional comment → Submit review
 - **Success criteria**: Reviews appear on venue details immediately, average ratings update correctly across all matches at that venue, users can view all reviews for a venue
 
-### Venue Management (Admin Only)
-- **Functionality**: Comprehensive venue management dashboard for platform administrators with add, edit, delete, and analytics capabilities
-- **Purpose**: Enables admins to manage the venue database, maintain accurate venue information, monitor venue performance, and identify quality issues
-- **Trigger**: Admin clicks "Venues" button in header (button only visible to app owner)
-- **Progression**: Click Venues → View dashboard with statistics (total venues, average rating, cities covered) → See city distribution chart → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue statistics (rating distribution, aspect ratings, recent reviews) → Delete venues with confirmation
-- **Success criteria**: Only app owner can access venue management, all CRUD operations persist correctly, statistics update in real-time, search filters venues instantly, venue stats show comprehensive analytics including review breakdowns and match history
+### Role Selection on Landing Page
+- **Functionality**: Initial role selection screen that allows users to choose between accessing the platform as a player or as a venue manager
+- **Purpose**: Creates clear separation between player and manager experiences, ensures proper authentication flows for each role
+- **Trigger**: First time user opens the application (when no role has been chosen and no user/manager is logged in)
+- **Progression**: Open app → View role selection screen with two options → Click "Sono un Giocatore" → Profile creation dialog opens → Complete profile → Access player features OR Click "Sono un Manager" → Manager login dialog opens → Login/signup → Access management dashboard
+- **Success criteria**: Role selection appears only on first access, choice is persisted across sessions, users can logout and return to role selection, clear visual distinction between player and manager options
+
+### Venue Management (Manager Login Required)
+- **Functionality**: Comprehensive venue management dashboard for venue managers with add, edit, delete, and analytics capabilities
+- **Purpose**: Enables venue managers to manage their venues, maintain accurate venue information, monitor venue performance, booking conflicts, and handle reservations
+- **Trigger**: User clicks "Management" button in header and completes manager authentication (login or signup)
+- **Progression**: Click Management → Manager login/signup dialog appears → Complete authentication → View dashboard with statistics (total venues, average rating, bookings today) → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue statistics (rating distribution, aspect ratings, recent reviews) → Manage bookings and conflicts → Delete venues with confirmation → Logout to return to role selection
+- **Success criteria**: ALL users must authenticate as managers to access management area, managers can only see/edit their own venues, authentication persists during session, logout returns to role selection screen, all CRUD operations persist correctly, statistics update in real-time
 
 ### Booking Conflict Detection
 - **Functionality**: Automatic detection of scheduling conflicts when creating matches or bookings at the same venue for overlapping time slots (assuming 90-minute match duration)
@@ -131,7 +138,9 @@ This is a light application because it manages multiple interconnected features 
 - **Past Date Selection**: Prevent users from selecting dates in the past for new matches
 - **Unrealistic Player Counts**: Enforce min/max player limits (2-22) with helpful guidance for typical match sizes
 - **Transaction Filtering**: Future enhancement to filter transactions by type, status, or date range
-- **Non-Admin Venue Access**: Venue management button and page only visible/accessible to app owner
+- **No Role Selected**: Show role selection screen when no user or manager is logged in and no role has been chosen
+- **Accessing Management Without Login**: Always show manager login dialog, even for app owner (no bypass)
+- **Manager Logout**: Clear manager session and return to role selection screen allowing switch between roles
 - **Empty Venue List**: Display helpful empty state with call-to-action to add first venue
 - **No Search Results**: Show "no venues found" message when search query returns no results
 - **Venue Deletion with Active Matches**: Future enhancement to warn or prevent deletion of venues with upcoming matches
