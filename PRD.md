@@ -153,17 +153,30 @@ This is a SaaS platform with two distinct applications: a player-facing interfac
 
 ## Architecture & Application Structure
 
-**SaaS Architecture Best Practices:**
-- **Complete Separation**: Player and Management interfaces are entirely separate with no cross-contamination
-- **Route-Based Access**: Management dashboard accessible only via `/management` route (not visible in player UI)
-- **Authentication Gates**: Management requires explicit login - no automatic access even for app owners
-- **Independent Theming**: Management can have distinct visual identity from player-facing app
-- **Focused User Experience**: Players never see management features, reducing cognitive load
-- **Scalability**: Architecture supports future growth (mobile apps, API endpoints, additional admin tools)
+**SaaS Architecture - Single Backend with RBAC:**
+- **Unified System**: Single codebase, single database, unified authentication with role-based access control (RBAC)
+- **Three User Roles**:
+  - **PLAYER**: Can view/join matches, make payments, chat in joined matches, edit own profile
+  - **MANAGER**: Can create/manage matches they created, create/manage venues, view their own match participants
+  - **ADMIN**: Full system access including user management, all venues, all matches, metrics, payment oversight
+- **Route-Based Interfaces**:
+  - **Player Application** (`/` route): Landing page, match browsing, profiles, live matches, payments
+  - **Management Application** (`/management` route): Venue CRUD, analytics, booking conflicts, notifications (MANAGER & ADMIN only)
+- **Authentication**: All users authenticate through the same system, with role determining available features
+- **Shared Services**: Authentication, data persistence (useKV), notification system, payment processing
+
+**Key Architectural Decisions:**
+- ❌ No separate backoffice software
+- ❌ No separate backend or database  
+- ✅ One backend + one DB + role-based access
+- ✅ Different frontends only at UI level (mobile app → players, web dashboard → manager & admin)
+- ✅ Permissions enforced through comprehensive RBAC system
+- ✅ Managers see only matches/venues they created
+- ✅ Admin has full access with sensitive actions logged
 
 **Application Segments:**
 1. **Player Application** (`/` route): Landing page, match browsing, profiles, live matches, payments
-2. **Management Application** (`/management` route): Venue CRUD, analytics, booking conflicts, notifications
+2. **Management Application** (`/management` route): Venue CRUD, analytics, booking conflicts, notifications (accessible only to MANAGER and ADMIN roles with mandatory authentication)
 3. **Shared Services**: Authentication, data persistence (useKV), notification system
 
 ## Design Direction

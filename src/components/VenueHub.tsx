@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type Venue, type VenueManager, type VenueBooking, type Match, type VenueReview, type Notification } from '@/lib/types'
+import { type Venue, type User, type VenueBooking, type Match, type VenueReview, type Notification } from '@/lib/types'
+import { isAdmin, isManager } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,7 +24,8 @@ import {
   Check,
   CheckCircle,
   CurrencyDollar,
-  SignOut
+  SignOut,
+  ShieldCheck
 } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -31,6 +33,7 @@ import { AddVenueDialog } from '@/components/AddVenueDialog'
 import { EditVenueDialog } from '@/components/EditVenueDialog'
 import { VenueStatsDialog } from '@/components/VenueStatsDialog'
 import { VenueAvailabilityCalendar } from '@/components/VenueAvailabilityCalendar'
+import { AdminPanel } from '@/components/AdminPanel'
 import { getNotificationIcon, getNotificationColor, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/notifications'
 import { getRelativeTime } from '@/lib/helpers'
 import {
@@ -46,12 +49,11 @@ import {
 
 interface VenueHubProps {
   onBack: () => void
-  currentUserId?: string
-  manager?: VenueManager | null
+  currentUser: User
   onLogout?: () => void
 }
 
-export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubProps) {
+export function VenueHub({ onBack, currentUser, onLogout }: VenueHubProps) {
   const [venues, setVenues] = useKV<Venue[]>('venues', [])
   const [reviews] = useKV<VenueReview[]>('venue-reviews', [])
   const [notifications] = useKV<Notification[]>('notifications', [])
@@ -63,27 +65,13 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   const [deletingVenue, setDeletingVenue] = useState<Venue | null>(null)
   const [statsVenue, setStatsVenue] = useState<Venue | null>(null)
   const [calendarVenue, setCalendarVenue] = useState<Venue | null>(null)
-  const [activeTab, setActiveTab] = useState<'venues' | 'bookings' | 'reviews' | 'notifications'>('venues')
-  const [adminUserId, setAdminUserId] = useState<string>('')
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [activeTab, setActiveTab] = useState<'venues' | 'bookings' | 'reviews' | 'notifications' | 'admin'>('venues')
 
-  const isManagerMode = !!manager
+  const userIsAdmin = isAdmin(currentUser)
+  const userIsManager = isManager(currentUser)
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const user = await window.spark.user()
-        setIsAdmin(user?.isOwner || false)
-        setAdminUserId(user?.id?.toString() || currentUserId || '')
-      } catch {
-        setAdminUserId(currentUserId || '')
-      }
-    }
-    checkAdmin()
-  }, [currentUserId])
-
-  const displayedVenues = isManagerMode
-    ? venues?.filter(v => v.managerId === manager?.id) || []
+  const displayedVenues = userIsManager && !userIsAdmin
+    ? venues?.filter(v => v.managerId === currentUser.id) || []
     : venues?.filter(venue => {
         const query = searchQuery.toLowerCase()
         return (
@@ -93,10 +81,10 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
         )
       }) || []
 
-  const managerVenues = isManagerMode ? displayedVenues : []
+  const managerVenues = userIsManager ? displayedVenues : []
 
   const todayBookings = bookings?.filter(b => {
-    const isManagerVenue = isManagerMode 
+    const isManagerVenue = userIsManager && !userIsAdmin
       ? managerVenues.some(v => v.id === b.venueId)
       : true
     const isToday = b.date === new Date().toISOString().split('T')[0]
@@ -104,7 +92,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   }) || []
 
   const upcomingBookings = bookings?.filter(b => {
-    const isManagerVenue = isManagerMode
+    const isManagerVenue = userIsManager && !userIsAdmin
       ? managerVenues.some(v => v.id === b.venueId)
       : true
     const isUpcoming = new Date(b.date) > new Date()
@@ -112,13 +100,13 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   }) || []
 
   const totalRevenue = matches?.filter(m => 
-    isManagerMode 
+    userIsManager && !userIsAdmin
       ? managerVenues.some(v => v.id === m.venue.id)
       : true
   ).reduce((sum, m) => sum + (m.price * m.currentPlayers), 0) || 0
 
   const relevantReviews = reviews?.filter(r => 
-    isManagerMode
+    userIsManager && !userIsAdmin
       ? managerVenues.some(v => v.id === r.venueId)
       : true
   ) || []
@@ -128,24 +116,24 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
     : 0
 
   const handleAddVenue = async (venue: Venue) => {
-    const venueWithManager = isManagerMode
+    const venueWithManager = userIsManager
       ? {
           ...venue,
-          managerId: manager!.id,
-          managerName: `${manager!.firstName} ${manager!.lastName}`
+          managerId: currentUser.id,
+          managerName: `${currentUser.firstName} ${currentUser.lastName}`
         }
       : venue
 
     setVenues(currentVenues => [...(currentVenues || []), venueWithManager])
     
-    if (isManagerMode && manager) {
-      const managers = await window.spark.kv.get<VenueManager[]>('venue-managers') || []
-      const updatedManagers = managers.map(m => 
-        m.id === manager.id 
-          ? { ...m, venueIds: [...m.venueIds, venue.id] }
-          : m
+    if (userIsManager) {
+      const users = await window.spark.kv.get<User[]>('users') || []
+      const updatedUsers = users.map(u => 
+        u.id === currentUser.id 
+          ? { ...u, venueIds: [...(u.venueIds || []), venue.id] }
+          : u
       )
-      await window.spark.kv.set('venue-managers', updatedManagers)
+      await window.spark.kv.set('users', updatedUsers)
     }
 
     setIsAddDialogOpen(false)
@@ -189,11 +177,11 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
       const isVenueNotification = n.type === 'booking_conflict' || n.metadata?.venueName
       if (!isVenueNotification) return false
       
-      if (isManagerMode) {
+      if (userIsManager && !userIsAdmin) {
         return managerVenues.some(v => v.name === n.metadata?.venueName)
       }
       
-      return adminUserId === '' || n.userId === adminUserId
+      return n.userId === currentUser.id
     })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
@@ -204,9 +192,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
   }
 
   const handleMarkAllAsRead = async () => {
-    const userId = isManagerMode ? manager?.id : adminUserId
-    if (!userId) return
-    await markAllNotificationsAsRead(userId)
+    await markAllNotificationsAsRead(currentUser.id)
   }
 
   const handleLogout = () => {
@@ -237,18 +223,18 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               <Buildings size={32} weight="duotone" className="text-primary" />
               <div>
                 <h1 className="text-xl font-bold">
-                  {isManagerMode ? 'Dashboard Management' : 'Management'}
+                  {userIsManager ? 'Dashboard Management' : 'Management'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {isManagerMode 
-                    ? `${manager?.firstName} ${manager?.lastName}`
+                  {userIsManager 
+                    ? `${currentUser.firstName} ${currentUser.lastName}`
                     : `${displayedVenues?.length || 0} venue totali`
                   }
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {(!isManagerMode || (isManagerMode && venueRelatedNotifications.length > 0)) && (
+              {(!userIsManager || (userIsManager && venueRelatedNotifications.length > 0)) && (
                 <Button
                   variant="ghost"
                   onClick={() => setActiveTab('notifications')}
@@ -277,7 +263,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                 <Plus size={20} weight="bold" />
                 <span className="hidden sm:inline">Aggiungi Venue</span>
               </Button>
-              {isManagerMode && (
+              {userIsManager && (
                 <Button
                   variant="outline"
                   onClick={handleLogout}
@@ -308,7 +294,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                 </div>
                 <div className="text-3xl font-bold mb-1">{displayedVenues?.length || 0}</div>
                 <div className="text-sm text-muted-foreground">
-                  {isManagerMode ? 'Venue Gestiti' : 'Venues Totali'}
+                  {userIsManager ? 'Venue Gestiti' : 'Venues Totali'}
                 </div>
               </CardContent>
             </Card>
@@ -374,14 +360,14 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <TabsList className={`grid w-full max-w-2xl mx-auto mb-8 ${
-            isManagerMode ? 'grid-cols-4' : 'grid-cols-2'
+          <TabsList className={`grid w-full max-w-3xl mx-auto mb-8 ${
+            userIsAdmin ? 'grid-cols-5' : userIsManager ? 'grid-cols-4' : 'grid-cols-2'
           }`}>
             <TabsTrigger value="venues" className="gap-2">
               <Buildings size={18} weight="duotone" />
               Venues
             </TabsTrigger>
-            {isManagerMode && (
+            {userIsManager && (
               <>
                 <TabsTrigger value="bookings" className="gap-2">
                   <CalendarBlank size={18} weight="duotone" />
@@ -392,6 +378,12 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                   Recensioni
                 </TabsTrigger>
               </>
+            )}
+            {userIsAdmin && (
+              <TabsTrigger value="admin" className="gap-2">
+                <ShieldCheck size={18} weight="duotone" />
+                Admin
+              </TabsTrigger>
             )}
             <TabsTrigger value="notifications" className="gap-2">
               <Bell size={18} weight="duotone" />
@@ -405,7 +397,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
           </TabsList>
 
           <TabsContent value="venues" className="space-y-8 mt-0">
-            {!isManagerMode && cityStats.length > 0 && (
+            {!userIsManager && cityStats.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -438,9 +430,9 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               <CardHeader>
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <CardTitle className="text-lg">
-                    {isManagerMode ? 'I Miei Venue' : 'Tutti i Venues'}
+                    {userIsManager ? 'I Miei Venue' : 'Tutti i Venues'}
                   </CardTitle>
-                  {!isManagerMode && (
+                  {!userIsManager && (
                     <div className="relative flex-1 max-w-md">
                       <MagnifyingGlass
                         size={20}
@@ -475,7 +467,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                     )}
                   </div>
                 ) : (
-                  <div className={`grid ${isManagerMode ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                  <div className={`grid ${userIsManager ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'} gap-4`}>
                     {displayedVenues.map((venue, index) => {
                       const venueReviews = getVenueReviews(venue.id)
                       const venueBookings = bookings?.filter(b => b.venueId === venue.id && b.status === 'booked') || []
@@ -516,7 +508,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                                             </span>
                                           </Badge>
                                         )}
-                                        {isManagerMode && (
+                                        {userIsManager && (
                                           <>
                                             <Badge variant="outline">{venueBookings.length} prenotazioni</Badge>
                                             <Badge variant="outline">{venueReviews.length} recensioni</Badge>
@@ -564,7 +556,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
                                   >
                                     <PencilSimple size={18} weight="duotone" />
                                   </Button>
-                                  {(isAdmin || isManagerMode) && (
+                                  {userIsAdmin && (
                                     <Button
                                       variant="outline"
                                       size="icon"
@@ -587,7 +579,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
             </Card>
           </TabsContent>
 
-          {isManagerMode && (
+          {userIsManager && (
             <>
               <TabsContent value="bookings">
                 <Card>
@@ -801,6 +793,12 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               </CardContent>
             </Card>
           </TabsContent>
+
+          {userIsAdmin && (
+            <TabsContent value="admin">
+              <AdminPanel currentUser={currentUser} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

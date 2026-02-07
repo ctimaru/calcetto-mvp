@@ -1,23 +1,21 @@
 export type SkillLevel = 'principiante' | 'intermedio' | 'avanzato'
 
+export type UserRole = 'PLAYER' | 'MANAGER' | 'ADMIN'
+
 export interface User {
   id: string
   email: string
+  password?: string
   firstName: string
   lastName: string
   age: number
   skillLevel: SkillLevel
   location: string
+  role: UserRole
   joinedMatches: string[]
-}
-
-export interface VenueManager {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  phone: string
-  venueIds: string[]
+  createdMatches: string[]
+  venueIds?: string[]
+  phone?: string
   createdAt: string
 }
 

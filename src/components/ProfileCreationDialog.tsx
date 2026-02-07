@@ -89,7 +89,10 @@ export function ProfileCreationDialog({ open, onClose, onProfileCreated, editing
         age: parseInt(age),
         location: location.trim(),
         skillLevel: skillLevel as SkillLevel,
-        joinedMatches: editingUser?.joinedMatches || []
+        role: editingUser?.role || 'PLAYER',
+        joinedMatches: editingUser?.joinedMatches || [],
+        createdMatches: editingUser?.createdMatches || [],
+        createdAt: editingUser?.createdAt || new Date().toISOString()
       }
 
       await new Promise(resolve => setTimeout(resolve, 800))

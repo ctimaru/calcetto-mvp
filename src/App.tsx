@@ -73,7 +73,14 @@ function App() {
         await window.spark.kv.set('venues', getDefaultVenues())
       }
     }
+    
+    const initializeUsers = async () => {
+      const { seedInitialUsers } = await import('@/lib/seed')
+      await seedInitialUsers()
+    }
+    
     initializeVenues()
+    initializeUsers()
   }, [])
 
   const handleProfileCreated = (user: User) => {

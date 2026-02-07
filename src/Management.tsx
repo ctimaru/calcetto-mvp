@@ -1,29 +1,28 @@
 import { useState } from 'react'
-import { type VenueManager } from '@/lib/types'
+import { type User } from '@/lib/types'
 import { Toaster } from 'sonner'
 import { VenueHub } from '@/components/VenueHub'
-import { VenueManagerLogin } from '@/components/VenueManagerLogin'
+import { Login } from '@/components/Login'
 import { MatchReminderService } from '@/components/MatchReminderService'
 
 function Management() {
-  const [venueManager, setVenueManager] = useState<VenueManager | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
-  const handleManagerLogin = (manager: VenueManager) => {
-    setVenueManager(manager)
+  const handleLogin = (user: User) => {
+    setCurrentUser(user)
   }
 
   const handleLogout = () => {
-    setVenueManager(null)
+    setCurrentUser(null)
   }
 
-  if (!venueManager) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-background">
         <Toaster richColors position="top-center" />
-        <VenueManagerLogin 
-          open={true}
-          onLogin={handleManagerLogin}
-          onClose={() => {}}
+        <Login 
+          onLogin={handleLogin}
+          requireManagementAccess={true}
         />
       </div>
     )
@@ -35,8 +34,7 @@ function Management() {
       <MatchReminderService />
       <VenueHub 
         onBack={handleLogout}
-        currentUserId={undefined}
-        manager={venueManager}
+        currentUser={currentUser}
         onLogout={handleLogout}
       />
     </>
