@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match, type VenueManager } from '@/lib/types'
+import { type User, type Match } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,10 +14,8 @@ import {
   ArrowRight,
   Star,
   CheckCircle,
-  User as UserIcon,
   Plus,
-  Broadcast,
-  Buildings
+  Broadcast
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'sonner'
@@ -28,8 +26,6 @@ import { ProfileView } from '@/components/ProfileView'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ActivePlayersDialog } from '@/components/ActivePlayersDialog'
 import { LiveMatchesView } from '@/components/LiveMatchesView'
-import { VenueHub } from '@/components/VenueHub'
-import { VenueManagerLogin } from '@/components/VenueManagerLogin'
 import { MatchReminderService } from '@/components/MatchReminderService'
 import { getDefaultVenues } from '@/lib/helpers'
 
@@ -47,9 +43,8 @@ interface Feature {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live' | 'venues'>('home')
+  const [currentView, setCurrentView] = useState<'home' | 'browse' | 'profile' | 'live'>('home')
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
-  const [venueManager, setVenueManager] = useState<VenueManager | null>(null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false)
   const [isActivePlayersDialogOpen, setIsActivePlayersDialogOpen] = useState(false)
@@ -57,9 +52,6 @@ function App() {
   const [activeMatches] = useKV<number>('active-matches', 47)
   const [totalPlayers] = useKV<number>('total-players', 1243)
   const [upcomingGames] = useKV<number>('upcoming-games', 23)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [isVenueLoginDialogOpen, setIsVenueLoginDialogOpen] = useState(false)
-  const [hasChosenRole, setHasChosenRole] = useKV<boolean>('has-chosen-role', false)
   
   const liveMatchesCount = matches?.filter(match => {
     const now = new Date()
@@ -84,32 +76,9 @@ function App() {
     initializeVenues()
   }, [])
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const user = await window.spark.user()
-        setIsAdmin(user?.isOwner || false)
-      } catch (error) {
-        setIsAdmin(false)
-      }
-    }
-    checkAdmin()
-  }, [])
-
-
-
   const handleProfileCreated = (user: User) => {
     setCurrentUser(user)
-    setHasChosenRole(true)
     setIsProfileDialogOpen(false)
-  }
-
-  const handlePlayerAccess = () => {
-    setIsProfileDialogOpen(true)
-  }
-
-  const handleManagerAccess = () => {
-    setIsVenueLoginDialogOpen(true)
   }
 
   const handleUserUpdate = (updatedUser: User) => {
@@ -120,27 +89,6 @@ function App() {
     toast.success(`Partita creata! ID: ${match.id}`)
     setIsCreateMatchDialogOpen(false)
     setCurrentView('browse')
-  }
-
-  const handleVenueAccess = () => {
-    if (venueManager) {
-      setCurrentView('venues')
-    } else {
-      setIsVenueLoginDialogOpen(true)
-    }
-  }
-
-  const handleManagerLogin = (manager: VenueManager) => {
-    setVenueManager(manager)
-    setHasChosenRole(true)
-    setIsVenueLoginDialogOpen(false)
-    setCurrentView('venues')
-  }
-
-  const handleVenueLogout = () => {
-    setVenueManager(null)
-    setHasChosenRole(false)
-    setCurrentView('home')
   }
 
   if (currentView === 'browse') {
@@ -161,21 +109,6 @@ function App() {
     )
   }
 
-  if (currentView === 'venues') {
-    return (
-      <>
-        <Toaster richColors position="top-center" />
-        <MatchReminderService />
-        <VenueHub 
-          onBack={handleVenueLogout}
-          currentUserId={currentUser?.id}
-          manager={venueManager}
-          onLogout={handleVenueLogout}
-        />
-      </>
-    )
-  }
-
   if (currentView === 'profile' && currentUser) {
     return (
       <>
@@ -186,118 +119,6 @@ function App() {
           onUserUpdate={handleUserUpdate}
         />
       </>
-    )
-  }
-
-  if (!hasChosenRole && !currentUser && !venueManager) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Toaster richColors position="top-center" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5" />
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: `repeating-linear-gradient(
-              45deg,
-              transparent,
-              transparent 10px,
-              oklch(0.45 0.12 155 / 0.03) 10px,
-              oklch(0.45 0.12 155 / 0.03) 20px
-            )`
-          }}
-        />
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative container mx-auto px-4 max-w-4xl"
-        >
-          <div className="text-center mb-12">
-            <Trophy size={64} weight="fill" className="text-primary mx-auto mb-6" />
-            <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight">
-              Benvenuto su <span className="text-primary">Players League</span>
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Scegli come vuoi accedere alla piattaforma
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all cursor-pointer h-full group"
-                onClick={handlePlayerAccess}
-              >
-                <CardContent className="pt-8 pb-8 px-6 text-center">
-                  <div className="mb-6 p-4 bg-primary/10 rounded-full inline-block group-hover:scale-110 transition-transform">
-                    <UserIcon size={48} weight="duotone" className="text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Sono un Giocatore</h2>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    Crea il tuo profilo, trova partite nella tua zona e unisciti alla community
-                  </p>
-                  <Button 
-                    size="lg"
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    Accedi come Giocatore
-                    <ArrowRight size={20} weight="bold" className="ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              <Card className="border-2 border-secondary/20 hover:border-secondary/50 transition-all cursor-pointer h-full group"
-                onClick={handleManagerAccess}
-              >
-                <CardContent className="pt-8 pb-8 px-6 text-center">
-                  <div className="mb-6 p-4 bg-secondary/10 rounded-full inline-block group-hover:scale-110 transition-transform">
-                    <Buildings size={48} weight="duotone" className="text-secondary" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-3">Sono un Manager</h2>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    Gestisci venue, monitora prenotazioni e amministra la piattaforma
-                  </p>
-                  <Button 
-                    size="lg"
-                    className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                  >
-                    Accedi come Manager
-                    <ArrowRight size={20} weight="bold" className="ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            Potrai sempre tornare alla schermata principale e cambiare modalità
-          </p>
-        </motion.div>
-
-        <ProfileCreationDialog
-          open={isProfileDialogOpen}
-          onClose={() => setIsProfileDialogOpen(false)}
-          onProfileCreated={handleProfileCreated}
-        />
-
-        <VenueManagerLogin 
-          open={isVenueLoginDialogOpen}
-          onLogin={handleManagerLogin}
-          onClose={() => setIsVenueLoginDialogOpen(false)}
-        />
-      </div>
     )
   }
 
@@ -357,31 +178,6 @@ function App() {
               <span className="text-xl font-bold">Players League</span>
             </div>
             <div className="flex items-center gap-2">
-              {(currentUser || venueManager) && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    if (venueManager) {
-                      handleVenueLogout()
-                    } else {
-                      setCurrentUser(null)
-                      setHasChosenRole(false)
-                    }
-                  }}
-                  className="gap-2 hover:bg-destructive/10 text-destructive"
-                >
-                  <ArrowRight size={20} weight="bold" className="rotate-180" />
-                  <span className="hidden sm:inline">Esci</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={handleVenueAccess}
-                className="gap-2 hover:bg-primary/10 border-primary/30"
-              >
-                <Buildings size={20} weight="duotone" />
-                <span className="hidden md:inline">Management</span>
-              </Button>
               {currentUser && (
                 <>
                   <Button
@@ -404,6 +200,15 @@ function App() {
                     <span className="hidden sm:inline">{currentUser.firstName}</span>
                   </Button>
                 </>
+              )}
+              {!currentUser && (
+                <Button
+                  onClick={() => setIsProfileDialogOpen(true)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                >
+                  <Plus size={20} weight="bold" />
+                  <span className="hidden sm:inline">Crea Profilo</span>
+                </Button>
               )}
             </div>
           </div>
@@ -474,7 +279,7 @@ function App() {
                   size="lg" 
                   variant="outline"
                   className="px-8 py-6 text-lg border-2 hover:bg-primary/5"
-                  onClick={handlePlayerAccess}
+                  onClick={() => setIsProfileDialogOpen(true)}
                 >
                   Crea Profilo
                 </Button>
@@ -722,8 +527,21 @@ function App() {
               <Trophy size={32} weight="fill" className="text-primary" />
               <span className="text-xl font-bold">Players League</span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              © 2024 Players League. Connecting players worldwide.
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+              <div className="text-sm text-muted-foreground">
+                © 2024 Players League. Connecting players worldwide.
+              </div>
+              <a 
+                href="/management" 
+                className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                onClick={(e) => {
+                  e.preventDefault()
+                  window.history.pushState({}, '', '/management')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }}
+              >
+                Management Access
+              </a>
             </div>
           </div>
         </div>
@@ -731,14 +549,7 @@ function App() {
 
       <ProfileCreationDialog
         open={isProfileDialogOpen}
-        onClose={() => {
-          if (currentUser) {
-            setIsProfileDialogOpen(false)
-          } else {
-            setIsProfileDialogOpen(false)
-            setHasChosenRole(false)
-          }
-        }}
+        onClose={() => setIsProfileDialogOpen(false)}
         onProfileCreated={handleProfileCreated}
       />
 
@@ -752,12 +563,6 @@ function App() {
       <ActivePlayersDialog
         open={isActivePlayersDialogOpen}
         onClose={() => setIsActivePlayersDialogOpen(false)}
-      />
-
-      <VenueManagerLogin 
-        open={isVenueLoginDialogOpen}
-        onLogin={handleManagerLogin}
-        onClose={() => setIsVenueLoginDialogOpen(false)}
       />
     </div>
   )

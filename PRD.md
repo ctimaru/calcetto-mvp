@@ -7,8 +7,8 @@ A modern platform that connects amateur soccer players, helps them discover and 
 2. **Welcoming** - New players feel immediately at home with clear pathways to get started
 3. **Professional** - Despite being for amateurs, the platform feels polished and trustworthy
 
-**Complexity Level**: Light Application (multiple features with basic state)
-This is a light application because it manages multiple interconnected features (match browsing, user profiles, payments, match participation) with persistent state, but doesn't require complex multi-view navigation or advanced data relationships typical of enterprise applications.
+**Complexity Level**: Complex Application (advanced functionality with multiple views)
+This is a SaaS platform with two distinct applications: a player-facing interface for match discovery and participation, and a completely separated management dashboard for venue administrators. The architecture follows SaaS best practices with clear separation of concerns, role-based access control, and independent routing for each application segment.
 
 ## Essential Features
 
@@ -89,19 +89,19 @@ This is a light application because it manages multiple interconnected features 
 - **Progression**: View my past matches → Select completed match → Click "Valuta il Campo" → Rate overall experience (1-5 stars) → Rate specific aspects (cleanliness, quality, facilities, location) → Add optional comment → Submit review
 - **Success criteria**: Reviews appear on venue details immediately, average ratings update correctly across all matches at that venue, users can view all reviews for a venue
 
-### Role Selection on Landing Page
-- **Functionality**: Initial role selection screen that allows users to choose between accessing the platform as a player or as a venue manager
-- **Purpose**: Creates clear separation between player and manager experiences, ensures proper authentication flows for each role
-- **Trigger**: First time user opens the application (when no role has been chosen and no user/manager is logged in)
-- **Progression**: Open app → View role selection screen with two options → Click "Sono un Giocatore" → Profile creation dialog opens → Complete profile → Access player features OR Click "Sono un Manager" → Manager login dialog opens → Login/signup → Access management dashboard
-- **Success criteria**: Role selection appears only on first access, choice is persisted across sessions, users can logout and return to role selection, clear visual distinction between player and manager options
+### First-Time User Experience
+- **Functionality**: Streamlined onboarding for new players with optional profile creation
+- **Purpose**: Reduces friction for new users while encouraging profile creation for better experience
+- **Trigger**: User visits the application for the first time
+- **Progression**: Open app → View landing page with match preview and CTA → Browse matches as guest → Optional: Click "Crea Profilo" to create profile for joining matches
+- **Success criteria**: Users can explore matches without signup, profile creation is intuitive when needed, returning users see their profile automatically
 
-### Venue Management (Manager Login Required)
-- **Functionality**: Comprehensive venue management dashboard for venue managers with add, edit, delete, and analytics capabilities
-- **Purpose**: Enables venue managers to manage their venues, maintain accurate venue information, monitor venue performance, booking conflicts, and handle reservations
-- **Trigger**: User clicks "Management" button in header and completes manager authentication (login or signup)
-- **Progression**: Click Management → Manager login/signup dialog appears → Complete authentication → View dashboard with statistics (total venues, average rating, bookings today) → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue statistics (rating distribution, aspect ratings, recent reviews) → Manage bookings and conflicts → Delete venues with confirmation → Logout to return to role selection
-- **Success criteria**: ALL users must authenticate as managers to access management area, managers can only see/edit their own venues, authentication persists during session, logout returns to role selection screen, all CRUD operations persist correctly, statistics update in real-time
+### Management Application (Separate Route - `/management`)
+- **Functionality**: Complete venue management dashboard accessible only via direct URL with mandatory authentication
+- **Purpose**: Provides venue managers and administrators with tools to manage venues, monitor bookings, resolve conflicts, and analyze platform performance
+- **Trigger**: User navigates directly to `/management` URL (not accessible from player UI)
+- **Progression**: Navigate to `/management` → Manager login screen appears → Complete authentication → View dashboard with statistics (total venues, average rating, bookings today) → Browse/search venue list → Add new venue via dialog → Edit existing venue details → View venue analytics → Manage booking conflicts → Delete venues with confirmation → Logout returns to login screen (stays at `/management`)
+- **Success criteria**: Management UI never appears in player navigation, all users must authenticate to access (including app owner), managers see only their venues (unless admin), authentication persists during session, logout keeps user at `/management` route, all CRUD operations work correctly, separate visual theme from player app
 
 ### Booking Conflict Detection
 - **Functionality**: Automatic detection of scheduling conflicts when creating matches or bookings at the same venue for overlapping time slots (assuming 90-minute match duration)
@@ -138,9 +138,9 @@ This is a light application because it manages multiple interconnected features 
 - **Past Date Selection**: Prevent users from selecting dates in the past for new matches
 - **Unrealistic Player Counts**: Enforce min/max player limits (2-22) with helpful guidance for typical match sizes
 - **Transaction Filtering**: Future enhancement to filter transactions by type, status, or date range
-- **No Role Selected**: Show role selection screen when no user or manager is logged in and no role has been chosen
-- **Accessing Management Without Login**: Always show manager login dialog, even for app owner (no bypass)
-- **Manager Logout**: Clear manager session and return to role selection screen allowing switch between roles
+- **Accessing Management**: Management is on separate route `/management`, never visible in player UI
+- **Management Without Login**: Always show login screen at `/management` for unauthenticated users
+- **Manager Logout**: Returns to management login screen (stays at `/management` route)
 - **Empty Venue List**: Display helpful empty state with call-to-action to add first venue
 - **No Search Results**: Show "no venues found" message when search query returns no results
 - **Venue Deletion with Active Matches**: Future enhancement to warn or prevent deletion of venues with upcoming matches
@@ -151,9 +151,27 @@ This is a light application because it manages multiple interconnected features 
 - **Notification Overflow**: Panel scrolls smoothly with infinite scroll, older notifications remain accessible
 - **Failed Notification Delivery**: System retries notification creation and logs errors for debugging
 
+## Architecture & Application Structure
+
+**SaaS Architecture Best Practices:**
+- **Complete Separation**: Player and Management interfaces are entirely separate with no cross-contamination
+- **Route-Based Access**: Management dashboard accessible only via `/management` route (not visible in player UI)
+- **Authentication Gates**: Management requires explicit login - no automatic access even for app owners
+- **Independent Theming**: Management can have distinct visual identity from player-facing app
+- **Focused User Experience**: Players never see management features, reducing cognitive load
+- **Scalability**: Architecture supports future growth (mobile apps, API endpoints, additional admin tools)
+
+**Application Segments:**
+1. **Player Application** (`/` route): Landing page, match browsing, profiles, live matches, payments
+2. **Management Application** (`/management` route): Venue CRUD, analytics, booking conflicts, notifications
+3. **Shared Services**: Authentication, data persistence (useKV), notification system
+
 ## Design Direction
 
 The design should evoke energy, athleticism, and Italian sporting culture - vibrant but not overwhelming, professional yet approachable. Users should feel the excitement of the game while trusting the platform's reliability. The aesthetic should mirror the experience of arriving at a well-maintained campo di calcetto: organized, inviting, and ready for action.
+
+**Player Application**: Bright, energetic, sporty aesthetic focused on discovery and community
+**Management Application**: Professional, data-driven, dashboard-oriented design focused on efficiency
 
 ## Color Selection
 
