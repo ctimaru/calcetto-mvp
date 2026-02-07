@@ -244,7 +244,7 @@ function App() {
                 className="gap-2 hover:bg-primary/10 border-primary/30"
               >
                 <Buildings size={20} weight="duotone" />
-                <span className="hidden md:inline">Venue Hub</span>
+                <span className="hidden md:inline">Management</span>
               </Button>
               {currentUser && (
                 <>

@@ -126,7 +126,7 @@ export function VenueManagerLogin({ open, onLogin, onClose }: VenueManagerLoginP
               <Buildings size={24} weight="duotone" className="text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-2xl">Venue Hub</DialogTitle>
+              <DialogTitle className="text-2xl">Management</DialogTitle>
               <DialogDescription>
                 Accedi per gestire i tuoi campi e prenotazioni
               </DialogDescription>

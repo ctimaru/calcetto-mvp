@@ -237,7 +237,7 @@ export function VenueHub({ onBack, currentUserId, manager, onLogout }: VenueHubP
               <Buildings size={32} weight="duotone" className="text-primary" />
               <div>
                 <h1 className="text-xl font-bold">
-                  {isManagerMode ? 'Dashboard Manager' : 'Gestione Venues'}
+                  {isManagerMode ? 'Dashboard Management' : 'Management'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {isManagerMode 
