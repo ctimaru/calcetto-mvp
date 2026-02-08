@@ -43,6 +43,10 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+export function formatRating(rating: number): string {
+  return rating.toFixed(1)
+}
+
 export function getRelativeTime(iso: string): string {
   try {
     const date = new Date(iso)
