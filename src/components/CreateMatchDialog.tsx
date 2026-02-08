@@ -1,467 +1,241 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { type User, type Match, type Venue, type SkillLevel, type BookingConflict } from '@/lib/types'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Plus, Calendar, Users, MapPin, CurrencyEur, Trophy } from '@phosphor-icons/react'
+import { Field, Match, User } from '@/lib/types'
+import { Plus } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { generateId } from '@/lib/helpers'
-import { motion, AnimatePresence } from 'framer-motion'
-import { checkBookingConflicts, createBookingWithConflictCheck } from '@/lib/booking-conflicts'
-import { notifyMatchCreated } from '@/lib/notifications'
-import { BookingConflictDialog } from './BookingConflictDialog'
 
 interface CreateMatchDialogProps {
   open: boolean
   onClose: () => void
-  onMatchCreated: (match: Match) => void
-  currentUser: User | null
+  currentUser: User
 }
 
-export function CreateMatchDialog({ open, onClose, onMatchCreated, currentUser }: CreateMatchDialogProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [venues] = useKV<Venue[]>('venues', [])
-  const [conflict, setConflict] = useState<BookingConflict | null>(null)
-  const [showConflictDialog, setShowConflictDialog] = useState(false)
-  const [pendingMatch, setPendingMatch] = useState<Match | null>(null)
-  
-  const [formData, setFormData] = useState({
-    venueId: '',
-    date: '',
-    time: '',
-    totalPlayers: 10,
-    skillLevel: 'intermedio' as SkillLevel,
-    price: 5,
-    description: ''
-  })
+export function CreateMatchDialog({ open, onClose, currentUser }: CreateMatchDialogProps) {
+  const [fields] = useKV<Field[]>('fields', [])
+  const [fieldId, setFieldId] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [durationMin, setDurationMin] = useState('90')
+  const [skillLevel, setSkillLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'pro' | 'mixed'>('mixed')
+  const [playersNeeded, setPlayersNeeded] = useState('10')
+  const [pricePerPlayer, setPricePerPlayer] = useState('15')
+  const [isCreating, setIsCreating] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setStep(1)
-      setFormData({
-        venueId: '',
-        date: '',
-        time: '',
-        totalPlayers: 10,
-        skillLevel: 'intermedio' as SkillLevel,
-        price: 5,
-        description: ''
-      })
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      setDate(tomorrow.toISOString().split('T')[0])
+      setTime('19:00')
     }
   }, [open])
 
-  const handleNext = () => {
-    if (step === 1) {
-      if (!formData.venueId) {
-        toast.error('Seleziona un campo sportivo')
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setIsCreating(true)
+
+    try {
+      if (!fieldId) {
+        toast.error('Seleziona un campo')
         return
       }
-      setStep(2)
-    } else if (step === 2) {
-      if (!formData.date || !formData.time) {
-        toast.error('Compila data e ora')
+
+      const field = fields?.find(f => f.id === fieldId)
+      if (!field) {
+        toast.error('Campo non trovato')
         return
       }
-      const selectedDate = new Date(formData.date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+
+      const startTime = new Date(`${date}T${time}`)
       
-      if (selectedDate < today) {
-        toast.error('Seleziona una data futura')
-        return
+      const matches = await window.spark.kv.get<Match[]>('matches') || []
+      
+      const newMatch: Match = {
+        id: `match-${Date.now()}`,
+        fieldId,
+        field,
+        city: field.city,
+        startTime: startTime.toISOString(),
+        durationMin: parseInt(durationMin),
+        skillLevel,
+        playersNeeded: parseInt(playersNeeded),
+        pricePerPlayer: parseFloat(pricePerPlayer),
+        status: 'published',
+        createdBy: currentUser.id,
+        createdAt: new Date().toISOString()
       }
-      setStep(3)
+
+      await window.spark.kv.set('matches', [...matches, newMatch])
+      
+      toast.success('Partita creata con successo!')
+      onClose()
+      
+      setFieldId('')
+      setDurationMin('90')
+      setSkillLevel('mixed')
+      setPlayersNeeded('10')
+      setPricePerPlayer('15')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore durante la creazione')
+    } finally {
+      setIsCreating(false)
     }
   }
 
-  const handleBack = () => {
-    if (step > 1) {
-      setStep((step - 1) as 1 | 2)
-    }
+  if (currentUser.role === 'player') {
+    return null
   }
-
-  const handleSubmit = async () => {
-    if (!currentUser) {
-      toast.error('Devi essere loggato per creare una partita')
-      return
-    }
-
-    if (formData.totalPlayers < 2 || formData.totalPlayers > 22) {
-      toast.error('Il numero di giocatori deve essere tra 2 e 22')
-      return
-    }
-
-    if (formData.price < 0) {
-      toast.error('Il prezzo non può essere negativo')
-      return
-    }
-
-    const venue = (venues || []).find(v => v.id === formData.venueId)
-    if (!venue) {
-      toast.error('Campo sportivo non trovato')
-      return
-    }
-
-    const detectedConflict = await checkBookingConflicts(
-      formData.venueId,
-      formData.date,
-      formData.time
-    )
-
-    if (detectedConflict) {
-      setConflict(detectedConflict)
-      setShowConflictDialog(true)
-
-      const match: Match = {
-        id: generateId(),
-        date: formData.date,
-        time: formData.time,
-        venue,
-        totalPlayers: formData.totalPlayers,
-        currentPlayers: 1,
-        skillLevel: formData.skillLevel,
-        price: formData.price,
-        status: 'open',
-        participants: [{
-          userId: currentUser.id,
-          firstName: currentUser.firstName,
-          lastName: currentUser.lastName,
-          skillLevel: currentUser.skillLevel,
-          joinedAt: new Date().toISOString(),
-          paid: true
-        }],
-        createdBy: currentUser.id
-      }
-      setPendingMatch(match)
-      return
-    }
-
-    await createMatch()
-  }
-
-  const createMatch = async (forceCreate = false) => {
-    if (!currentUser) return
-
-    const venue = (venues || []).find(v => v.id === formData.venueId)
-    if (!venue) return
-
-    const match: Match = pendingMatch || {
-      id: generateId(),
-      date: formData.date,
-      time: formData.time,
-      venue,
-      totalPlayers: formData.totalPlayers,
-      currentPlayers: 1,
-      skillLevel: formData.skillLevel,
-      price: formData.price,
-      status: 'open',
-      participants: [{
-        userId: currentUser.id,
-        firstName: currentUser.firstName,
-        lastName: currentUser.lastName,
-        skillLevel: currentUser.skillLevel,
-        joinedAt: new Date().toISOString(),
-        paid: true
-      }],
-      createdBy: currentUser.id
-    }
-
-    if (!forceCreate) {
-      await createBookingWithConflictCheck(
-        match.venue.id,
-        match.venue.name,
-        match.date,
-        match.time,
-        match.id,
-        currentUser.id
-      )
-    }
-
-    const matches = await window.spark.kv.get<Match[]>('matches') || []
-    await window.spark.kv.set('matches', [...matches, match])
-
-    const updatedUser = {
-      ...currentUser,
-      joinedMatches: [...currentUser.joinedMatches, match.id]
-    }
-    await window.spark.kv.set('current-user', updatedUser)
-
-    await notifyMatchCreated(match, currentUser)
-
-    setPendingMatch(null)
-    setConflict(null)
-    onMatchCreated(match)
-    onClose()
-  }
-
-  const selectedVenue = (venues || []).find(v => v.id === formData.venueId)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <Plus size={28} weight="bold" className="text-accent" />
-            Crea Nuova Partita
+          <DialogTitle className="flex items-center gap-2">
+            <Plus size={24} weight="bold" className="text-primary" />
+            Crea nuova partita
           </DialogTitle>
           <DialogDescription>
-            Organizza una partita e invita altri giocatori a unirsi
+            Pubblica una nuova partita per i giocatori
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-2 mb-6">
-          {[1, 2, 3].map((s) => (
-            <div
-              key={s}
-              className={`flex-1 h-2 rounded-full transition-all ${
-                s <= step ? 'bg-accent' : 'bg-muted'
-              }`}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="field">Campo *</Label>
+            <Select value={fieldId} onValueChange={setFieldId} required disabled={isCreating}>
+              <SelectTrigger id="field">
+                <SelectValue placeholder="Seleziona un campo" />
+              </SelectTrigger>
+              <SelectContent>
+                {fields?.map((field) => (
+                  <SelectItem key={field.id} value={field.id}>
+                    {field.name} - {field.city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Data *</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                disabled={isCreating}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">Ora *</Label>
+              <Input
+                id="time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+                disabled={isCreating}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="duration">Durata (minuti) *</Label>
+            <Input
+              id="duration"
+              type="number"
+              value={durationMin}
+              onChange={(e) => setDurationMin(e.target.value)}
+              min="30"
+              max="180"
+              step="15"
+              required
+              disabled={isCreating}
             />
-          ))}
-        </div>
+          </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
+          <div className="space-y-2">
+            <Label htmlFor="skill">Livello di gioco *</Label>
+            <Select 
+              value={skillLevel} 
+              onValueChange={(val) => setSkillLevel(val as any)}
+              disabled={isCreating}
             >
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin size={24} weight="duotone" className="text-primary" />
-                  Scegli il Campo
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="venue">Campo Sportivo</Label>
-                    <Select
-                      value={formData.venueId}
-                      onValueChange={(value) => setFormData({ ...formData, venueId: value })}
-                    >
-                      <SelectTrigger id="venue" className="mt-2">
-                        <SelectValue placeholder="Seleziona un campo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(venues || []).map((venue) => (
-                          <SelectItem key={venue.id} value={venue.id}>
-                            {venue.name} - {venue.city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <SelectTrigger id="skill">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginner">Principiante</SelectItem>
+                <SelectItem value="intermediate">Intermedio</SelectItem>
+                <SelectItem value="advanced">Avanzato</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="mixed">Misto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-                  {selectedVenue && (
-                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                      <p className="font-medium">{selectedVenue.name}</p>
-                      <p className="text-sm text-muted-foreground">{selectedVenue.address}</p>
-                      <p className="text-sm text-muted-foreground">{selectedVenue.city}</p>
-                      <p className="text-sm text-muted-foreground">Tel: {selectedVenue.phone}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="players">Numero giocatori *</Label>
+            <Input
+              id="players"
+              type="number"
+              value={playersNeeded}
+              onChange={(e) => setPlayersNeeded(e.target.value)}
+              min="4"
+              max="22"
+              required
+              disabled={isCreating}
+            />
+          </div>
 
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Calendar size={24} weight="duotone" className="text-primary" />
-                  Data e Ora
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="match-date">Data *</Label>
-                    <Input
-                      id="match-date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="mt-2"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Prezzo per giocatore (€) *</Label>
+            <Input
+              id="price"
+              type="number"
+              value={pricePerPlayer}
+              onChange={(e) => setPricePerPlayer(e.target.value)}
+              min="0"
+              step="0.5"
+              required
+              disabled={isCreating}
+            />
+          </div>
 
-                  <div>
-                    <Label htmlFor="match-time">Ora *</Label>
-                    <Input
-                      id="match-time"
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Trophy size={24} weight="duotone" className="text-primary" />
-                  Dettagli Partita
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="skill-level">Livello di Gioco</Label>
-                    <Select
-                      value={formData.skillLevel}
-                      onValueChange={(value) => setFormData({ ...formData, skillLevel: value as SkillLevel })}
-                    >
-                      <SelectTrigger id="skill-level" className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="principiante">Principiante</SelectItem>
-                        <SelectItem value="intermedio">Intermedio</SelectItem>
-                        <SelectItem value="avanzato">Avanzato</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="total-players">Numero Totale Giocatori</Label>
-                    <div className="flex items-center gap-3 mt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFormData({ ...formData, totalPlayers: Math.max(2, formData.totalPlayers - 2) })}
-                      >
-                        -
-                      </Button>
-                      <Input
-                        id="total-players"
-                        type="number"
-                        value={formData.totalPlayers}
-                        onChange={(e) => setFormData({ ...formData, totalPlayers: parseInt(e.target.value) || 10 })}
-                        min={2}
-                        max={22}
-                        className="text-center"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setFormData({ ...formData, totalPlayers: Math.min(22, formData.totalPlayers + 2) })}
-                      >
-                        +
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      <Users size={14} className="inline mr-1" />
-                      Tipicamente 10 giocatori (5 vs 5)
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="price">Prezzo per Giocatore (€)</Label>
-                    <div className="flex items-center gap-2 mt-2">
-                      <CurrencyEur size={20} className="text-muted-foreground" />
-                      <Input
-                        id="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                        min={0}
-                        step={0.5}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">Descrizione (opzionale)</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Aggiungi note sulla partita..."
-                      className="mt-2 min-h-[100px]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex gap-3 mt-6">
-          {step > 1 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
+          <div className="flex gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              disabled={isCreating}
               className="flex-1"
             >
-              Indietro
+              Annulla
             </Button>
-          )}
-          
-          {step < 3 ? (
-            <Button
-              type="button"
-              onClick={handleNext}
-              className="flex-1 bg-accent hover:bg-accent/90"
+            <Button 
+              type="submit"
+              disabled={isCreating}
+              className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
             >
-              Avanti
+              {isCreating ? 'Creazione...' : 'Crea partita'}
             </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              className="flex-1 bg-accent hover:bg-accent/90"
-            >
-              Crea Partita
-            </Button>
-          )}
-        </div>
+          </div>
+        </form>
       </DialogContent>
-
-      <BookingConflictDialog
-        open={showConflictDialog}
-        onClose={() => {
-          setShowConflictDialog(false)
-          setConflict(null)
-          setPendingMatch(null)
-        }}
-        conflict={conflict}
-        onProceedAnyway={() => createMatch(true)}
-        onCancel={() => {
-          setShowConflictDialog(false)
-          setConflict(null)
-          setPendingMatch(null)
-        }}
-      />
     </Dialog>
   )
 }
