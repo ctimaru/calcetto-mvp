@@ -180,3 +180,98 @@ const channel = supabase
 1. Add variables to your hosting platform (Spark/Vercel/etc.)
 2. Use exact same names: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 3. Redeploy after adding variables (some platforms require this)
+
+## 📊 Database Setup
+
+### Required Tables and Functions
+
+Run these SQL commands in your Supabase SQL Editor (Dashboard → SQL Editor):
+
+```sql
+-- 1. Create profiles table
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'player' CHECK (role IN ('player', 'manager', 'admin')),
+  name TEXT,
+  age INTEGER CHECK (age >= 10 AND age <= 99),
+  skill_level TEXT CHECK (skill_level IN ('beginner', 'intermediate', 'advanced', 'pro')),
+  home_city TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Create trigger function to auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (user_id, name, age, skill_level, home_city)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'name',
+    (NEW.raw_user_meta_data->>'age')::INTEGER,
+    NEW.raw_user_meta_data->>'skill_level',
+    NEW.raw_user_meta_data->>'home_city'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Create trigger on auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 4. Enable Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- 5. Create RLS policies
+CREATE POLICY "Profiles are viewable by everyone"
+  ON profiles FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- 6. Create updated_at trigger function
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Create updated_at trigger on profiles
+DROP TRIGGER IF EXISTS handle_profiles_updated_at ON profiles;
+CREATE TRIGGER handle_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+```
+
+### Verify Setup
+
+After running the SQL above, test your setup:
+
+```sql
+-- Check if profiles table exists
+SELECT * FROM profiles LIMIT 1;
+
+-- Check if trigger function exists
+SELECT routine_name 
+FROM information_schema.routines 
+WHERE routine_name = 'handle_new_user';
+
+-- Check RLS policies
+SELECT tablename, policyname 
+FROM pg_policies 
+WHERE tablename = 'profiles';
+```
+
+## 📚 Additional Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [Supabase Auth Guide](https://supabase.com/docs/guides/auth)
+- [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+- [Vite Environment Variables](https://vitejs.dev/guide/env-and-mode.html)

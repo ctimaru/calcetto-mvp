@@ -1,41 +1,105 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
 import { User, Field } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Plus, SignOut, User as UserIcon } from '@phosphor-icons/react'
-import { Toaster } from 'sonner'
+import { Trophy, Plus, SignOut } from '@phosphor-icons/react'
+import { Toaster, toast } from 'sonner'
 import { AuthView } from '@/components/AuthView'
 import { MatchList } from '@/components/MatchList'
 import { MatchDetail } from '@/components/MatchDetail'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { getDefaultFields, getUserInitials } from '@/lib/helpers'
 import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabaseClient'
 
 type View = 'list' | 'detail'
 
 function App() {
-  const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [view, setView] = useState<View>('list')
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function initializeApp() {
-      const existingFields = await window.spark.kv.get<Field[]>('fields')
-      if (!existingFields || existingFields.length === 0) {
-        await window.spark.kv.set('fields', getDefaultFields())
+      try {
+        const { data } = await supabase.auth.getSession()
+        
+        if (data.session?.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_id, role, name, age, skill_level, home_city')
+            .eq('user_id', data.session.user.id)
+            .single()
+
+          if (profileError) {
+            console.warn('Profile load error:', profileError)
+          } else {
+            const user: User = {
+              id: profileData.user_id,
+              email: data.session.user.email!,
+              name: profileData.name,
+              age: profileData.age,
+              skillLevel: profileData.skill_level,
+              homeCity: profileData.home_city,
+              role: profileData.role || 'player',
+              createdAt: data.session.user.created_at
+            }
+            setCurrentUser(user)
+          }
+        }
+      } catch (err) {
+        console.error('Session load error:', err)
+      } finally {
+        setIsLoading(false)
       }
     }
     
     initializeApp()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setCurrentUser(null)
+        setView('list')
+        setSelectedMatchId(null)
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, role, name, age, skill_level, home_city')
+          .eq('user_id', session.user.id)
+          .single()
+
+        if (!profileError && profileData) {
+          const user: User = {
+            id: profileData.user_id,
+            email: session.user.email!,
+            name: profileData.name,
+            age: profileData.age,
+            skillLevel: profileData.skill_level,
+            homeCity: profileData.home_city,
+            role: profileData.role || 'player',
+            createdAt: session.user.created_at
+          }
+          setCurrentUser(user)
+        }
+      }
+    })
+
+    return () => {
+      authListener?.subscription?.unsubscribe()
+    }
   }, [])
 
-  function handleLogout() {
-    setCurrentUser(null)
-    setView('list')
-    setSelectedMatchId(null)
+  async function handleLogout() {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      toast.success('Logout effettuato con successo')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore durante il logout')
+    }
   }
 
   function handleSelectMatch(matchId: string) {
@@ -46,6 +110,17 @@ function App() {
   function handleBackToList() {
     setView('list')
     setSelectedMatchId(null)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Trophy size={64} weight="fill" className="text-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-muted-foreground">Caricamento...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!currentUser) {

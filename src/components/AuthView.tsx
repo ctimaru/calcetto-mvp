@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User } from '@/lib/types'
 import { Trophy, CheckCircle } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabaseClient'
 
 interface AuthViewProps {
   onAuthenticated: (user: User) => void
@@ -32,16 +33,37 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setBusy(true)
 
     try {
-      const existingUsersData = await window.spark.kv.get<User[]>('users')
-      const existingUsers = existingUsersData || []
-      
-      const user = existingUsers.find(u => u.email === email)
-      
-      if (!user) {
-        setError('Utente non trovato. Registrati prima di effettuare il login.')
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError) throw authError
+      if (!data.user) throw new Error('Errore durante il login')
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, role, name, age, skill_level, home_city')
+        .eq('user_id', data.user.id)
+        .single()
+
+      if (profileError) {
+        console.warn('Profile not found:', profileError)
+        setError('Profilo non trovato. Contatta il supporto.')
         return
       }
-      
+
+      const user: User = {
+        id: profileData.user_id,
+        email: data.user.email!,
+        name: profileData.name,
+        age: profileData.age,
+        skillLevel: profileData.skill_level,
+        homeCity: profileData.home_city,
+        role: profileData.role || 'player',
+        createdAt: data.user.created_at
+      }
+
       setSuccess('Login effettuato con successo!')
       setTimeout(() => {
         onAuthenticated(user)
@@ -65,31 +87,23 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
         return
       }
 
-      const existingUsersData = await window.spark.kv.get<User[]>('users')
-      const existingUsers = existingUsersData || []
-      
-      if (existingUsers.find(u => u.email === email)) {
-        setError('Email già registrata. Effettua il login.')
-        return
-      }
-
-      const newUser: User = {
-        id: `user-${Date.now()}`,
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
-        name,
-        age: age ? parseInt(age) : undefined,
-        skillLevel,
-        homeCity,
-        role: 'player',
-        createdAt: new Date().toISOString()
-      }
+        password,
+        options: {
+          data: {
+            name,
+            age: age ? parseInt(age) : null,
+            skill_level: skillLevel,
+            home_city: homeCity,
+          }
+        }
+      })
 
-      await window.spark.kv.set('users', [...existingUsers, newUser])
-      
-      setSuccess('Registrazione completata! Accesso in corso...')
-      setTimeout(() => {
-        onAuthenticated(newUser)
-      }, 1000)
+      if (authError) throw authError
+      if (!data.user) throw new Error('Errore durante la registrazione')
+
+      setSuccess('Registrazione completata! Controlla la tua email per confermare l\'account, poi effettua il login.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore durante la registrazione')
     } finally {
