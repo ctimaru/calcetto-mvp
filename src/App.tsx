@@ -40,7 +40,10 @@ function App() {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false)
   const [route, setRoute] = useState<Route>(getRouteFromHash())
-  const [showCreateForm, setShowCreateForm] = useState<boolean>(false)
+  const [managerView, setManagerView] = useState<'dash' | 'create'>('dash')
+
+  const isManager = profile?.role === 'manager' || profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin'
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -81,7 +84,7 @@ function App() {
       await logout()
       setView('list')
       setSelectedMatchId(null)
-      setShowCreateForm(false)
+      setManagerView('dash')
       window.location.hash = '#/'
       toast.success('Logout effettuato con successo')
     } catch (e: any) {
@@ -93,7 +96,7 @@ function App() {
     window.location.hash = `#/${newRoute === 'player' ? '' : newRoute}`
     setView('list')
     setSelectedMatchId(null)
-    setShowCreateForm(false)
+    setManagerView('dash')
   }
 
   function handleSelectMatch(matchId: string) {
@@ -183,7 +186,7 @@ function App() {
                 )}
               </div>
 
-              {route === 'player' && (profile?.role === 'manager' || profile?.role === 'admin') && (
+              {route === 'player' && isManager && (
                 <Button
                   onClick={() => setIsCreateDialogOpen(true)}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
@@ -227,7 +230,7 @@ function App() {
       </header>
 
       <main className="container mx-auto px-4 sm:px-6 py-8">
-        {route === 'player' && (
+        {route === 'player' ? (
           <>
             {view === 'list' && session.user && (
               <MatchList 
@@ -245,29 +248,43 @@ function App() {
               />
             )}
           </>
-        )}
-
-        {route === 'manager' && session.user && (
-          <>
-            {!showCreateForm ? (
-              <ManagerDashboard onCreate={() => setShowCreateForm(true)} />
-            ) : (
+        ) : route === 'manager' ? (
+          !isManager ? (
+            <div className="max-w-2xl mx-auto text-center py-12">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-destructive mb-2">Accesso Negato</h2>
+                <p className="text-muted-foreground">
+                  Serve ruolo manager o admin per accedere a questa sezione.
+                </p>
+              </div>
+            </div>
+          ) : managerView === 'dash' ? (
+            <ManagerDashboard onCreate={() => setManagerView('create')} />
+          ) : (
+            session.user && (
               <CreateMatchForm
                 userId={session.user.id}
-                onDone={() => {
-                  setShowCreateForm(false)
-                }}
+                onDone={() => setManagerView('dash')}
               />
-            )}
-          </>
-        )}
-
-        {route === 'admin' && (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold">Admin Dashboard</h2>
-            <p className="text-muted-foreground mt-2">Coming soon...</p>
-          </div>
-        )}
+            )
+          )
+        ) : route === 'admin' ? (
+          !isAdmin ? (
+            <div className="max-w-2xl mx-auto text-center py-12">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-destructive mb-2">Accesso Negato</h2>
+                <p className="text-muted-foreground">
+                  Serve ruolo admin per accedere a questa sezione.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+              <p className="text-muted-foreground mt-2">Coming soon...</p>
+            </div>
+          )
+        ) : null}
       </main>
 
       {session.user && profile && route === 'player' && (
