@@ -11,6 +11,7 @@ import { MatchDetail } from '@/components/MatchDetail'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
 import { ManagerDashboard } from '@/components/ManagerDashboard'
 import { CreateMatchForm } from '@/components/CreateMatchForm'
+import { AdminMetrics } from '@/components/AdminMetrics'
 import { motion } from 'framer-motion'
 import { getProfile, logout } from '@/lib/api'
 
@@ -279,10 +280,7 @@ function App() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold">Admin Dashboard</h2>
-              <p className="text-muted-foreground mt-2">Coming soon...</p>
-            </div>
+            <AdminMetrics />
           )
         ) : null}
       </main>
