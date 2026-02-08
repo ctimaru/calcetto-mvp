@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
-import { User } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -10,22 +9,64 @@ import { AuthView } from '@/components/AuthView'
 import { MatchList } from '@/components/MatchList'
 import { MatchDetail } from '@/components/MatchDetail'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
-import { getUserInitials } from '@/lib/helpers'
 import { motion } from 'framer-motion'
+import { getProfile, logout } from '@/lib/api'
 
 type View = 'list' | 'detail'
 
-function App() {
-  const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
-  const [view, setView] = useKV<View>('current-view', 'list')
-  const [selectedMatchId, setSelectedMatchId] = useKV<string | null>('selected-match-id', null)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useKV<boolean>('create-dialog-open', false)
+interface Profile {
+  user_id: string
+  role: string
+  name?: string
+  age?: number
+  skill_level?: string
+  home_city?: string
+}
 
-  function handleLogout() {
-    setCurrentUser(null)
-    setView('list')
-    setSelectedMatchId(null)
-    toast.success('Logout effettuato con successo')
+function App() {
+  const [session, setSession] = useState<any>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [view, setView] = useState<View>('list')
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null)
+    })
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+      setSession(newSession ?? null)
+      setProfile(null)
+      if (newSession) {
+        setView('list')
+      }
+    })
+
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    (async () => {
+      if (!session?.user?.id) return
+      try {
+        const p = await getProfile(session.user.id)
+        setProfile(p)
+      } catch (e: any) {
+        console.warn('Profile fetch error:', e)
+      }
+    })()
+  }, [session?.user?.id])
+
+  async function handleLogout() {
+    try {
+      await logout()
+      setView('list')
+      setSelectedMatchId(null)
+      toast.success('Logout effettuato con successo')
+    } catch (e: any) {
+      toast.error(e.message ?? 'Errore durante il logout')
+    }
   }
 
   function handleSelectMatch(matchId: string) {
@@ -38,8 +79,22 @@ function App() {
     setSelectedMatchId(null)
   }
 
-  if (!currentUser) {
-    return <AuthView onAuthenticated={setCurrentUser} />
+  function getUserInitials(email?: string, name?: string) {
+    if (name) {
+      const parts = name.trim().split(' ')
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+      }
+      return name.slice(0, 2).toUpperCase()
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase()
+    }
+    return '??'
+  }
+
+  if (!session) {
+    return <AuthView onAuthenticated={() => {}} />
   }
 
   return (
@@ -65,7 +120,7 @@ function App() {
             </motion.div>
 
             <div className="flex items-center gap-2">
-              {(currentUser.role === 'manager' || currentUser.role === 'admin') && (
+              {(profile?.role === 'manager' || profile?.role === 'admin') && (
                 <Button
                   onClick={() => setIsCreateDialogOpen(true)}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
@@ -79,14 +134,18 @@ function App() {
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
                 <Avatar className="h-8 w-8 border-2 border-primary/30">
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                    {getUserInitials(currentUser)}
+                    {getUserInitials(session.user.email, profile?.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block">
-                  <div className="text-sm font-medium">{currentUser.name || currentUser.email}</div>
-                  <Badge variant="secondary" className="text-xs h-5">
-                    {currentUser.role}
-                  </Badge>
+                  <div className="text-sm font-medium">
+                    {profile?.name || session.user.email}
+                  </div>
+                  {profile?.role && (
+                    <Badge variant="secondary" className="text-xs h-5">
+                      {profile.role}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -105,27 +164,33 @@ function App() {
       </header>
 
       <main className="container mx-auto px-4 sm:px-6 py-8">
-        {view === 'list' && (
+        {view === 'list' && session.user && (
           <MatchList 
-            currentUser={currentUser}
+            userId={session.user.id}
+            city={profile?.home_city || 'Torino'}
             onSelectMatch={handleSelectMatch}
           />
         )}
 
-        {view === 'detail' && selectedMatchId && (
+        {view === 'detail' && selectedMatchId && session.user && (
           <MatchDetail
             matchId={selectedMatchId}
-            currentUser={currentUser}
+            userId={session.user.id}
             onBack={handleBackToList}
           />
         )}
       </main>
 
-      {currentUser && (
+      {session.user && profile && (
         <CreateMatchDialog
           open={isCreateDialogOpen}
           onClose={() => setIsCreateDialogOpen(false)}
-          currentUser={currentUser}
+          currentUser={{
+            id: session.user.id,
+            email: session.user.email || '',
+            role: profile.role as any,
+            name: profile.name,
+          }}
         />
       )}
     </div>

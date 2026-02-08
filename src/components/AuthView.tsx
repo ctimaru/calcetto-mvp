@@ -1,28 +1,21 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User } from '@/lib/types'
 import { Trophy, CheckCircle } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { login, register } from '@/lib/api'
 
 interface AuthViewProps {
-  onAuthenticated: (user: User) => void
+  onAuthenticated: () => void
 }
 
 export function AuthView({ onAuthenticated }: AuthViewProps) {
-  const [users, setUsers] = useKV<Record<string, User>>('all-users', {})
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
-  const [skillLevel, setSkillLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'pro'>('intermediate')
-  const [homeCity, setHomeCity] = useState('Torino')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -34,19 +27,13 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setBusy(true)
 
     try {
-      const user = Object.values(users).find(u => u.email === email)
-      
-      if (!user) {
-        setError('Email non trovata. Registrati per creare un account.')
-        return
-      }
-
+      await login(email, password)
       setSuccess('Login effettuato con successo!')
       setTimeout(() => {
-        onAuthenticated(user)
+        onAuthenticated()
       }, 500)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante il login')
+    } catch (err: any) {
+      setError(err.message || 'Errore durante il login')
     } finally {
       setBusy(false)
     }
@@ -59,42 +46,24 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setBusy(true)
 
     try {
-      if (!name || !email || !homeCity) {
+      if (!email || !password) {
         setError('Compila tutti i campi obbligatori')
         return
       }
 
-      if (Object.values(users).some(u => u.email === email)) {
-        setError('Email già registrata. Usa il login.')
+      if (password.length < 6) {
+        setError('La password deve essere di almeno 6 caratteri')
         return
       }
 
-      const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      const newUser: User = {
-        id: userId,
-        email,
-        name,
-        age: age ? parseInt(age) : undefined,
-        skillLevel,
-        homeCity,
-        role: 'player',
-        createdAt: new Date().toISOString()
-      }
-
-      setUsers(current => ({
-        ...current,
-        [userId]: newUser
-      }))
-
-      setSuccess('Registrazione completata! Ora puoi effettuare il login.')
+      await register(email, password)
+      setSuccess('Registrazione completata! Controlla la tua email per confermare.')
       setTimeout(() => {
         setEmail(email)
         setPassword('')
-        setName('')
-        setAge('')
       }, 1500)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante la registrazione')
+    } catch (err: any) {
+      setError(err.message || 'Errore durante la registrazione')
     } finally {
       setBusy(false)
     }
@@ -199,19 +168,6 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Nome completo *</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Mario Rossi"
-                      required
-                      disabled={busy}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
                     <Label htmlFor="register-email">Email *</Label>
                     <Input
                       id="register-email"
@@ -233,63 +189,9 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
+                      minLength={6}
                       disabled={busy}
                     />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="register-age">Età</Label>
-                      <Input
-                        id="register-age"
-                        type="number"
-                        value={age}
-                        onChange={(e) => setAge(e.target.value)}
-                        placeholder="25"
-                        min="10"
-                        max="99"
-                        disabled={busy}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-skill">Livello</Label>
-                      <Select 
-                        value={skillLevel} 
-                        onValueChange={(val) => setSkillLevel(val as any)}
-                        disabled={busy}
-                      >
-                        <SelectTrigger id="register-skill">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">Principiante</SelectItem>
-                          <SelectItem value="intermediate">Intermedio</SelectItem>
-                          <SelectItem value="advanced">Avanzato</SelectItem>
-                          <SelectItem value="pro">Pro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-city">Città *</Label>
-                    <Select 
-                      value={homeCity} 
-                      onValueChange={setHomeCity}
-                      disabled={busy}
-                    >
-                      <SelectTrigger id="register-city">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Torino">Torino</SelectItem>
-                        <SelectItem value="Milano">Milano</SelectItem>
-                        <SelectItem value="Roma">Roma</SelectItem>
-                        <SelectItem value="Napoli">Napoli</SelectItem>
-                        <SelectItem value="Bologna">Bologna</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                   
                   <Button 

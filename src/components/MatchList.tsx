@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useKV } from '@github/spark/hooks'
-import { Match, User } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,39 +11,82 @@ import {
   Trophy
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
-import { euroFromCents, formatDateTime, getSkillLevelLabel, getSurfaceTypeLabel } from '@/lib/helpers'
+import { listMatches } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface MatchListProps {
-  currentUser: User
+  userId: string
+  city: string
   onSelectMatch: (matchId: string) => void
 }
 
-export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
-  const [matches] = useKV<Match[]>('matches', [])
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([])
-  const [cityFilter, setCityFilter] = useState<string>(currentUser.homeCity)
+interface SupabaseMatch {
+  id: string
+  city: string
+  start_time: string
+  duration_min: number
+  skill_level: string
+  players_needed: number
+  price_per_player_cents: number
+  status: string
+  fields?: {
+    name: string
+    address: string
+  }
+}
+
+export function MatchList({ userId, city, onSelectMatch }: MatchListProps) {
+  const [matches, setMatches] = useState<SupabaseMatch[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!matches) {
-      setFilteredMatches([])
-      return
+    async function fetchMatches() {
+      setLoading(true)
+      try {
+        const data = await listMatches(city)
+        setMatches(data)
+      } catch (error: any) {
+        toast.error(error.message || 'Errore nel caricamento delle partite')
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchMatches()
+  }, [city])
 
-    const filtered = matches.filter(m => {
-      if (m.status !== 'published') return false
-      if (cityFilter && m.city !== cityFilter) return false
-      
-      const matchDate = new Date(m.startTime)
-      const now = new Date()
-      if (matchDate < now) return false
-      
-      return true
+  function formatDateTime(dateString: string) {
+    return new Date(dateString).toLocaleString('it-IT', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
     })
+  }
 
-    filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-    
-    setFilteredMatches(filtered)
-  }, [matches, cityFilter])
+  function formatPrice(cents: number) {
+    return `€${(cents / 100).toFixed(2)}`
+  }
+
+  function getSkillLabel(level: string) {
+    const labels: Record<string, string> = {
+      beginner: 'Principiante',
+      intermediate: 'Intermedio',
+      advanced: 'Avanzato',
+      pro: 'Pro'
+    }
+    return labels[level] || level
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-muted-foreground">Caricamento partite...</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -58,24 +99,24 @@ export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
         <div className="flex items-center gap-2">
           <FunnelSimple size={20} className="text-muted-foreground" />
           <Badge variant="outline" className="text-sm">
-            {cityFilter}
+            {city}
           </Badge>
         </div>
       </div>
 
-      {filteredMatches.length === 0 ? (
+      {matches.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Trophy size={48} weight="duotone" className="text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nessuna partita disponibile</h3>
             <p className="text-muted-foreground text-sm">
-              Non ci sono partite pubblicate nella tua città al momento.
+              Non ci sono partite pubblicate a {city} al momento.
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredMatches.map((match, index) => (
+          {matches.map((match, index) => (
             <motion.div
               key={match.id}
               initial={{ opacity: 0, y: 20 }}
@@ -95,11 +136,11 @@ export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                            {formatDateTime(match.startTime)}
+                            {formatDateTime(match.start_time)}
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                             <Clock size={16} />
-                            <span>{match.durationMin} minuti</span>
+                            <span>{match.duration_min} minuti</span>
                           </div>
                         </div>
                       </div>
@@ -107,24 +148,19 @@ export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary" className="gap-1.5">
                           <Users size={14} weight="bold" />
-                          {match.playersNeeded} giocatori
+                          {match.players_needed} giocatori
                         </Badge>
                         <Badge variant="outline">
-                          {getSkillLevelLabel(match.skillLevel)}
+                          {getSkillLabel(match.skill_level)}
                         </Badge>
-                        {match.field && (
-                          <Badge variant="outline" className="gap-1.5">
-                            {getSurfaceTypeLabel(match.field.surfaceType)}
-                          </Badge>
-                        )}
                       </div>
 
-                      {match.field && (
+                      {match.fields && (
                         <div className="flex items-start gap-2 text-sm text-muted-foreground">
                           <MapPin size={16} className="mt-0.5" />
                           <div>
-                            <div className="font-medium text-foreground">{match.field.name}</div>
-                            <div>{match.field.address}, {match.city}</div>
+                            <div className="font-medium text-foreground">{match.fields.name}</div>
+                            <div>{match.fields.address}</div>
                           </div>
                         </div>
                       )}
@@ -133,7 +169,7 @@ export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
                     <div className="flex md:flex-col items-end md:items-end gap-3">
                       <div className="text-right">
                         <div className="text-2xl font-bold text-primary">
-                          {euroFromCents(match.pricePerPlayerCents)}
+                          {formatPrice(match.price_per_player_cents)}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           per giocatore
