@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useKV } from '@github/spark/hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,13 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User } from '@/lib/types'
 import { Trophy, CheckCircle } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
-import { supabase } from '@/lib/supabaseClient'
 
 interface AuthViewProps {
   onAuthenticated: (user: User) => void
 }
 
 export function AuthView({ onAuthenticated }: AuthViewProps) {
+  const [users, setUsers] = useKV<Record<string, User>>('all-users', {})
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -33,35 +34,11 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setBusy(true)
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (authError) throw authError
-      if (!data.user) throw new Error('Errore durante il login')
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id, role, name, age, skill_level, home_city')
-        .eq('user_id', data.user.id)
-        .single()
-
-      if (profileError) {
-        console.warn('Profile not found:', profileError)
-        setError('Profilo non trovato. Contatta il supporto.')
+      const user = Object.values(users).find(u => u.email === email)
+      
+      if (!user) {
+        setError('Email non trovata. Registrati per creare un account.')
         return
-      }
-
-      const user: User = {
-        id: profileData.user_id,
-        email: data.user.email!,
-        name: profileData.name,
-        age: profileData.age,
-        skillLevel: profileData.skill_level,
-        homeCity: profileData.home_city,
-        role: profileData.role || 'player',
-        createdAt: data.user.created_at
       }
 
       setSuccess('Login effettuato con successo!')
@@ -82,28 +59,40 @@ export function AuthView({ onAuthenticated }: AuthViewProps) {
     setBusy(true)
 
     try {
-      if (!name || !email || !password || !homeCity) {
+      if (!name || !email || !homeCity) {
         setError('Compila tutti i campi obbligatori')
         return
       }
 
-      const { data, error: authError } = await supabase.auth.signUp({
+      if (Object.values(users).some(u => u.email === email)) {
+        setError('Email già registrata. Usa il login.')
+        return
+      }
+
+      const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const newUser: User = {
+        id: userId,
         email,
-        password,
-        options: {
-          data: {
-            name,
-            age: age ? parseInt(age) : null,
-            skill_level: skillLevel,
-            home_city: homeCity,
-          }
-        }
-      })
+        name,
+        age: age ? parseInt(age) : undefined,
+        skillLevel,
+        homeCity,
+        role: 'player',
+        createdAt: new Date().toISOString()
+      }
 
-      if (authError) throw authError
-      if (!data.user) throw new Error('Errore durante la registrazione')
+      setUsers(current => ({
+        ...current,
+        [userId]: newUser
+      }))
 
-      setSuccess('Registrazione completata! Controlla la tua email per confermare l\'account, poi effettua il login.')
+      setSuccess('Registrazione completata! Ora puoi effettuare il login.')
+      setTimeout(() => {
+        setEmail(email)
+        setPassword('')
+        setName('')
+        setAge('')
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore durante la registrazione')
     } finally {
