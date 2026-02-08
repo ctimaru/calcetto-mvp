@@ -133,7 +133,7 @@ export function MatchList({ currentUser, onSelectMatch }: MatchListProps) {
                     <div className="flex md:flex-col items-end md:items-end gap-3">
                       <div className="text-right">
                         <div className="text-2xl font-bold text-primary">
-                          {euroFromCents(match.pricePerPlayer * 100)}
+                          {euroFromCents(match.pricePerPlayerCents)}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           per giocatore

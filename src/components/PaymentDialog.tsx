@@ -73,7 +73,7 @@ export function PaymentDialog({ open, onClose, amount, onPaymentComplete }: Paym
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 my-4">
           <div className="text-sm text-muted-foreground mb-1">Totale da pagare</div>
           <div className="text-3xl font-bold text-accent-foreground">
-            {euroFromCents(amount * 100)}
+            {euroFromCents(amount)}
           </div>
         </div>
 
@@ -158,7 +158,7 @@ export function PaymentDialog({ open, onClose, amount, onPaymentComplete }: Paym
               ) : (
                 <>
                   <CheckCircle size={20} weight="fill" className="mr-2" />
-                  Paga {euroFromCents(amount * 100)}
+                  Paga {euroFromCents(amount)}
                 </>
               )}
             </Button>

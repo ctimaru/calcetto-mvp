@@ -1,4 +1,4 @@
-import { User, UserRole } from './types'
+import { User } from './types'
 
 export interface AuthState {
   user: User | null
@@ -21,6 +21,8 @@ export interface RegisterData {
   phone?: string
 }
 
+type UserRole = 'player' | 'manager' | 'admin'
+
 export const hashPassword = async (password: string): Promise<string> => {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
@@ -38,7 +40,7 @@ export const hasPermission = (user: User | null, permission: string): boolean =>
   if (!user) return false
 
   const permissions: Record<UserRole, string[]> = {
-    PLAYER: [
+    player: [
       'match:view',
       'match:join',
       'match:leave',
@@ -47,7 +49,7 @@ export const hasPermission = (user: User | null, permission: string): boolean =>
       'payment:make',
       'venue:rate',
     ],
-    MANAGER: [
+    manager: [
       'match:view',
       'match:create',
       'match:edit_own',
@@ -59,7 +61,7 @@ export const hasPermission = (user: User | null, permission: string): boolean =>
       'venue:view_bookings_own',
       'profile:edit_own',
     ],
-    ADMIN: [
+    admin: [
       'match:view',
       'match:create',
       'match:edit_all',
@@ -86,19 +88,19 @@ export const hasPermission = (user: User | null, permission: string): boolean =>
 
 export const canAccessManagement = (user: User | null): boolean => {
   if (!user) return false
-  return user.role === 'MANAGER' || user.role === 'ADMIN'
+  return user.role === 'manager' || user.role === 'admin'
 }
 
 export const isAdmin = (user: User | null): boolean => {
-  return user?.role === 'ADMIN'
+  return user?.role === 'admin'
 }
 
 export const isManager = (user: User | null): boolean => {
-  return user?.role === 'MANAGER'
+  return user?.role === 'manager'
 }
 
 export const isPlayer = (user: User | null): boolean => {
-  return user?.role === 'PLAYER'
+  return user?.role === 'player'
 }
 
 export const canEditMatch = (user: User | null, matchCreatorId: string): boolean => {

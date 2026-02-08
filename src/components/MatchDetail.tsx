@@ -154,7 +154,7 @@ export function MatchDetail({ matchId, currentUser, onBack }: MatchDetailProps) 
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-primary">
-                  {euroFromCents(match.pricePerPlayer * 100)}
+                  {euroFromCents(match.pricePerPlayerCents)}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   per giocatore
@@ -306,7 +306,7 @@ export function MatchDetail({ matchId, currentUser, onBack }: MatchDetailProps) 
         <PaymentDialog
           open={isPaymentDialogOpen}
           onClose={() => setIsPaymentDialogOpen(false)}
-          amount={match.pricePerPlayer}
+          amount={match.pricePerPlayerCents}
           onPaymentComplete={handlePaymentComplete}
         />
       )}

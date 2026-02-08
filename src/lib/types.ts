@@ -30,7 +30,7 @@ export interface Match {
   durationMin: number
   skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'pro' | 'mixed'
   playersNeeded: number
-  pricePerPlayer: number
+  pricePerPlayerCents: number
   status: 'draft' | 'published' | 'cancelled' | 'completed'
   createdBy: string
   createdAt: string

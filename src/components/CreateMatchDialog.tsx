@@ -70,7 +70,7 @@ export function CreateMatchDialog({ open, onClose, currentUser }: CreateMatchDia
         durationMin: parseInt(durationMin),
         skillLevel,
         playersNeeded: parseInt(playersNeeded),
-        pricePerPlayer: parseFloat(pricePerPlayer),
+        pricePerPlayerCents: Math.round(parseFloat(pricePerPlayer) * 100),
         status: 'published',
         createdBy: currentUser.id,
         createdAt: new Date().toISOString()
