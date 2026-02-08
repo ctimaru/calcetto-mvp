@@ -68,15 +68,20 @@ export function getRelativeTime(iso: string): string {
   }
 }
 
-export function getUserInitials(user: User | { name: string }): string {
-  if (typeof user.name !== "string" || user.name.length === 0) {
-    throw new Error("helpers.ts: user.name is missing/undefined (cannot split). Check env vars/config.")
+export function getUserInitials(user: User | { name?: string; email?: string }): string {
+  if (typeof user.name === "string" && user.name.length > 0) {
+    const parts = user.name.split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return user.name.slice(0, 2).toUpperCase()
   }
-  const parts = user.name.split(' ')
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  
+  if ('email' in user && typeof user.email === "string" && user.email.length > 0) {
+    return user.email.slice(0, 2).toUpperCase()
   }
-  return user.name.slice(0, 2).toUpperCase()
+  
+  return '??'
 }
 
 export function getSkillLevelLabel(level: string): string {

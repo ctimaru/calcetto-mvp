@@ -93,7 +93,7 @@ function App() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block">
-                  <div className="text-sm font-medium">{currentUser.name}</div>
+                  <div className="text-sm font-medium">{currentUser.name || currentUser.email}</div>
                   <Badge variant="secondary" className="text-xs h-5">
                     {currentUser.role}
                   </Badge>

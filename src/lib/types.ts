@@ -1,10 +1,10 @@
 export interface User {
   id: string
   email: string
-  name: string
+  name?: string
   age?: number
-  skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'pro'
-  homeCity: string
+  skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'pro'
+  homeCity?: string
   role: 'player' | 'manager' | 'admin'
   createdAt: string
 }
