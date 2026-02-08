@@ -29,7 +29,11 @@ Before running this application, you need:
 
 ## ⚙️ Environment Setup
 
-This application requires Supabase credentials to function. See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed setup instructions.
+This application uses **Vite** and requires Supabase credentials to function. 
+
+> 🔑 **Key Point**: This is a Vite app, so environment variables **must** use the `VITE_` prefix.
+
+See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed setup instructions.
 
 **Quick Setup:**
 
@@ -44,6 +48,8 @@ This application requires Supabase credentials to function. See [SUPABASE_SETUP.
    VITE_SUPABASE_ANON_KEY=your-anon-key-here
    ```
 
+   Get these values from [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+
 3. Install dependencies:
    ```bash
    npm install
@@ -54,12 +60,31 @@ This application requires Supabase credentials to function. See [SUPABASE_SETUP.
    npm run dev
    ```
 
+## 🚀 Deployment
+
+For detailed deployment instructions to Spark, Vercel, Netlify, and other platforms, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+
+### Quick Reference
+
+When deploying to any platform, set these environment variables:
+
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anon/public key
+
+**Important:** 
+- Always use the `VITE_` prefix (required for Vite apps)
+- Use the **anon/public key**, not the service role key
+- After adding variables, redeploy your application
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for platform-specific instructions.
+
 ## 🔒 Security
 
 The application includes hard checks for required environment variables. If `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` are missing, the app will throw an error immediately, preventing undefined values from causing runtime issues.
 
 ## 📚 Documentation
 
+- [Deployment Guide](./DEPLOYMENT.md) - Complete deployment instructions for all platforms
 - [Supabase Setup Guide](./SUPABASE_SETUP.md) - Detailed Supabase configuration
 - [Authentication Guide](./AUTH_GUIDE.md) - User authentication flow
 - [Security Guidelines](./SECURITY.md) - Security best practices

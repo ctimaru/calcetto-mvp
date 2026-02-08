@@ -2,66 +2,181 @@
 
 This application uses Supabase for backend services including authentication, database, and real-time features.
 
-## Environment Variables
+## 📋 Required Environment Variables
 
-The application requires the following environment variables to connect to Supabase:
+This app is built with **Vite**, so all environment variables must use the `VITE_` prefix:
 
 - `VITE_SUPABASE_URL`: Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous/public key
 
-### Setting Up Environment Variables
+> ⚠️ **Important**: Always use the **ANON/PUBLIC key** for frontend applications, never the service role key.
 
-1. **Create a `.env` file** in the root of your project:
+## 🔧 Local Development Setup
 
+### Step 1: Get Your Supabase Credentials
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project (or create a new one)
+3. Navigate to **Settings** → **API**
+4. Copy the following values:
+   - **Project URL** (e.g., `https://xxxxx.supabase.co`)
+   - **anon/public key** (the long JWT token under "Project API keys")
+
+### Step 2: Configure Environment Variables
+
+1. **Copy the example file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and add your credentials:**
+   ```bash
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ```
+
+3. **Restart your dev server** to pick up the new variables:
+   ```bash
+   npm run dev
+   ```
+
+## 🚀 Deployment Setup
+
+### Spark Deployment
+
+If you're deploying via Spark (GitHub's hosting):
+
+1. Go to your Spark project settings
+2. Find the **Environment Variables** section
+3. Add both variables:
+   - Name: `VITE_SUPABASE_URL` → Value: `https://your-project.supabase.co`
+   - Name: `VITE_SUPABASE_ANON_KEY` → Value: `your-anon-key`
+4. Redeploy your Spark
+
+### Vercel Deployment
+
+1. Go to your Vercel project dashboard
+2. Navigate to **Settings** → **Environment Variables**
+3. Add both variables for all environments (Production, Preview, Development)
+4. Redeploy your application
+
+### Other Platforms (Netlify, Railway, etc.)
+
+Follow your platform's documentation for setting environment variables. Always use the `VITE_` prefix and the anon key.
+
+## 🔍 Environment Variable Formats
+
+### ✅ Correct (Vite-based apps like this one):
 ```bash
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGci...
 ```
 
-2. **Get your Supabase credentials:**
-   - Go to your [Supabase Dashboard](https://supabase.com/dashboard)
-   - Select your project
-   - Go to Settings > API
-   - Copy the "Project URL" and "anon/public" key
-
-### For Deployment (Vercel/Production)
-
-Set these environment variables in your hosting platform:
-
-**Vercel:**
-1. Go to your project settings
-2. Navigate to "Environment Variables"
-3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-
-**Other Platforms:**
-Follow your platform's documentation for setting environment variables.
-
-## Error Handling
-
-The application includes a hard check for these environment variables in `src/lib/supabase.ts`. If either variable is missing or undefined, the application will throw an error:
-
-```
-Missing SUPABASE_URL or SUPABASE_ANON_KEY. Set them in Spark/Vercel environment variables.
+In code:
+```typescript
+const url = import.meta.env.VITE_SUPABASE_URL
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 ```
 
-This prevents runtime errors from attempting to use undefined values.
+### ❌ Incorrect (these won't work):
+```bash
+# Missing VITE_ prefix
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
 
-## Usage
+# Next.js style (wrong framework)
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 
-Import the Supabase client in your components:
+# Using process.env instead of import.meta.env
+const url = process.env.SUPABASE_URL // ❌ Won't work in Vite
+```
+
+## 🛡️ Error Handling
+
+The application includes a hard check in `src/lib/supabase.ts`. If environment variables are missing, you'll see:
+
+```
+❌ Missing Supabase configuration!
+
+Required environment variables:
+  • VITE_SUPABASE_URL
+  • VITE_SUPABASE_ANON_KEY
+
+Local Development:
+  1. Copy .env.example to .env
+  2. Add your Supabase credentials from supabase.com/dashboard
+
+Deployment (Spark/Vercel/Production):
+  Set environment variables in your hosting platform settings.
+  Use the ANON KEY (not service role key) for frontend apps.
+```
+
+This prevents runtime errors from undefined values causing cryptic "cannot read .split of undefined" errors.
+
+## 💡 Usage Examples
+
+Import the pre-configured Supabase client anywhere in your app:
 
 ```typescript
 import { supabase } from '@/lib/supabase'
 
-// Example: Fetch data
-const { data, error } = await supabase
-  .from('table_name')
+// Authentication
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+})
+
+// Database queries
+const { data: matches } = await supabase
+  .from('matches')
   .select('*')
+  .eq('status', 'published')
+
+// Real-time subscriptions
+const channel = supabase
+  .channel('match-updates')
+  .on('postgres_changes', 
+    { event: 'INSERT', schema: 'public', table: 'participations' },
+    (payload) => console.log('New participation:', payload)
+  )
+  .subscribe()
 ```
 
-## Security Notes
+## 🔒 Security Best Practices
 
-- Never commit your `.env` file to version control
-- The `.env` file is already in `.gitignore`
-- Only use the anon/public key in client-side code
-- Configure Row Level Security (RLS) policies in Supabase for data protection
+- ✅ **Never commit `.env`** to version control (already in `.gitignore`)
+- ✅ **Use the anon key** in frontend code, not the service role key
+- ✅ **Configure Row Level Security (RLS)** policies in Supabase to protect your data
+- ✅ **Rotate keys** if accidentally exposed
+- ✅ **Use environment-specific** projects (dev/staging/production)
+
+## 🆘 Troubleshooting
+
+### "Missing Supabase configuration" error
+
+**Problem**: Environment variables not loaded.
+
+**Solutions**:
+1. Check `.env` file exists in project root
+2. Verify variable names have `VITE_` prefix
+3. Restart dev server after creating/editing `.env`
+4. On deployment platforms, ensure variables are set in platform settings
+
+### "Invalid API key" or authentication errors
+
+**Problem**: Wrong key or expired credentials.
+
+**Solutions**:
+1. Verify you copied the **anon/public key**, not service role key
+2. Check for extra spaces or line breaks in the key
+3. Ensure the Supabase project is active and not paused
+
+### Variables work locally but not in deployment
+
+**Problem**: Platform environment variables not configured.
+
+**Solutions**:
+1. Add variables to your hosting platform (Spark/Vercel/etc.)
+2. Use exact same names: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+3. Redeploy after adding variables (some platforms require this)

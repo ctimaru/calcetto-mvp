@@ -69,15 +69,15 @@ export function getRelativeTime(iso: string): string {
 }
 
 export function getUserInitials(user: User | { name?: string; email?: string }): string {
-  if (typeof user.name === "string" && user.name.length > 0) {
-    const parts = user.name.split(' ')
+  if (typeof user?.name === "string" && user.name.length > 0) {
+    const parts = user.name.trim().split(' ').filter(p => p.length > 0)
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
     }
     return user.name.slice(0, 2).toUpperCase()
   }
   
-  if ('email' in user && typeof user.email === "string" && user.email.length > 0) {
+  if ('email' in user && typeof user?.email === "string" && user.email.length > 0) {
     return user.email.slice(0, 2).toUpperCase()
   }
   
