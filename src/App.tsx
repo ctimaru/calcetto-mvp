@@ -13,6 +13,7 @@ import { motion } from 'framer-motion'
 import { getProfile, logout } from '@/lib/api'
 
 type View = 'list' | 'detail'
+type Route = 'player' | 'manager' | 'admin'
 
 interface Profile {
   user_id: string
@@ -23,12 +24,20 @@ interface Profile {
   home_city?: string
 }
 
+function getRouteFromHash(): Route {
+  const h = (window.location.hash || '#/').toLowerCase()
+  if (h.startsWith('#/manager')) return 'manager'
+  if (h.startsWith('#/admin')) return 'admin'
+  return 'player'
+}
+
 function App() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [view, setView] = useState<View>('list')
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false)
+  const [route, setRoute] = useState<Route>(getRouteFromHash())
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -44,6 +53,12 @@ function App() {
     })
 
     return () => sub.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const onHash = () => setRoute(getRouteFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   useEffect(() => {
