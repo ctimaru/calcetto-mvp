@@ -3,12 +3,14 @@ import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Plus, SignOut } from '@phosphor-icons/react'
+import { Trophy, Plus, SignOut, User, ChartLine, Briefcase } from '@phosphor-icons/react'
 import { Toaster, toast } from 'sonner'
 import { AuthView } from '@/components/AuthView'
 import { MatchList } from '@/components/MatchList'
 import { MatchDetail } from '@/components/MatchDetail'
 import { CreateMatchDialog } from '@/components/CreateMatchDialog'
+import { ManagerDashboard } from '@/components/ManagerDashboard'
+import { CreateMatchForm } from '@/components/CreateMatchForm'
 import { motion } from 'framer-motion'
 import { getProfile, logout } from '@/lib/api'
 
@@ -38,6 +40,7 @@ function App() {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false)
   const [route, setRoute] = useState<Route>(getRouteFromHash())
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -78,10 +81,19 @@ function App() {
       await logout()
       setView('list')
       setSelectedMatchId(null)
+      setShowCreateForm(false)
+      window.location.hash = '#/'
       toast.success('Logout effettuato con successo')
     } catch (e: any) {
       toast.error(e.message ?? 'Errore durante il logout')
     }
+  }
+
+  function handleNavigate(newRoute: Route) {
+    window.location.hash = `#/${newRoute === 'player' ? '' : newRoute}`
+    setView('list')
+    setSelectedMatchId(null)
+    setShowCreateForm(false)
   }
 
   function handleSelectMatch(matchId: string) {
@@ -121,7 +133,7 @@ function App() {
           <div className="flex items-center justify-between gap-4">
             <motion.div 
               className="flex items-center gap-3 cursor-pointer"
-              onClick={handleBackToList}
+              onClick={() => handleNavigate('player')}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -135,7 +147,43 @@ function App() {
             </motion.div>
 
             <div className="flex items-center gap-2">
-              {(profile?.role === 'manager' || profile?.role === 'admin') && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Button
+                  variant={route === 'player' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleNavigate('player')}
+                  className="gap-2"
+                >
+                  <User size={18} weight="bold" />
+                  Player
+                </Button>
+
+                {(profile?.role === 'manager' || profile?.role === 'admin') && (
+                  <Button
+                    variant={route === 'manager' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleNavigate('manager')}
+                    className="gap-2"
+                  >
+                    <Briefcase size={18} weight="bold" />
+                    Manager
+                  </Button>
+                )}
+
+                {profile?.role === 'admin' && (
+                  <Button
+                    variant={route === 'admin' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleNavigate('admin')}
+                    className="gap-2"
+                  >
+                    <ChartLine size={18} weight="bold" />
+                    Admin
+                  </Button>
+                )}
+              </div>
+
+              {route === 'player' && (profile?.role === 'manager' || profile?.role === 'admin') && (
                 <Button
                   onClick={() => setIsCreateDialogOpen(true)}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
@@ -179,24 +227,50 @@ function App() {
       </header>
 
       <main className="container mx-auto px-4 sm:px-6 py-8">
-        {view === 'list' && session.user && (
-          <MatchList 
-            userId={session.user.id}
-            city={profile?.home_city || 'Torino'}
-            onSelectMatch={handleSelectMatch}
-          />
+        {route === 'player' && (
+          <>
+            {view === 'list' && session.user && (
+              <MatchList 
+                userId={session.user.id}
+                city={profile?.home_city || 'Torino'}
+                onSelectMatch={handleSelectMatch}
+              />
+            )}
+
+            {view === 'detail' && selectedMatchId && session.user && (
+              <MatchDetail
+                matchId={selectedMatchId}
+                userId={session.user.id}
+                onBack={handleBackToList}
+              />
+            )}
+          </>
         )}
 
-        {view === 'detail' && selectedMatchId && session.user && (
-          <MatchDetail
-            matchId={selectedMatchId}
-            userId={session.user.id}
-            onBack={handleBackToList}
-          />
+        {route === 'manager' && session.user && (
+          <>
+            {!showCreateForm ? (
+              <ManagerDashboard onCreate={() => setShowCreateForm(true)} />
+            ) : (
+              <CreateMatchForm
+                userId={session.user.id}
+                onDone={() => {
+                  setShowCreateForm(false)
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {route === 'admin' && (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+            <p className="text-muted-foreground mt-2">Coming soon...</p>
+          </div>
         )}
       </main>
 
-      {session.user && profile && (
+      {session.user && profile && route === 'player' && (
         <CreateMatchDialog
           open={isCreateDialogOpen}
           onClose={() => setIsCreateDialogOpen(false)}
