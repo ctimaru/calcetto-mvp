@@ -1,5 +1,9 @@
 import type { User, Field } from './types'
 
+export function generateId(prefix: string = 'id'): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+}
+
 export function euroFromCents(cents: number | null | undefined): string {
   if (cents == null) return '—'
   return (cents / 100).toFixed(2) + ' €'
