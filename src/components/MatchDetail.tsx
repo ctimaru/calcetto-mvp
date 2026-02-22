@@ -97,6 +97,11 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
     setClientSecret('')
     setError('')
     try {
+      const { data: sessData, error: sessErr } = await supabase.auth.getSession()
+      console.log("session err:", sessErr)
+      console.log("session user:", sessData.session?.user?.id)
+      console.log("has token:", !!sessData.session?.access_token)
+
       const res = await supabase.functions.invoke('create-payment-intent', {
         body: { matchId },
       })
