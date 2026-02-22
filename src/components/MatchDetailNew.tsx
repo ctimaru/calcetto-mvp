@@ -97,11 +97,24 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
     setClientSecret('')
     setError('')
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('create-payment-intent', {
-        body: { matchId },
-      })
+      const { data: sessData, error: sessErr } = await supabase.auth.getSession()
       
-      if (invokeError) throw invokeError
+      if (sessErr) throw sessErr
+
+      const token = sessData.session?.access_token
+      if (!token) throw new Error("Sessione assente: fai login prima di pagare.")
+
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { matchId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (error) {
+        console.error("Edge error", error, (error as any)?.context)
+        throw error
+      }
 
       if (data?.alreadyConfirmed) {
         await reloadParticipation()

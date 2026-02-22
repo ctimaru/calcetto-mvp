@@ -99,51 +99,34 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
     try {
       const { data: sessData, error: sessErr } = await supabase.auth.getSession()
       
-      if (sessErr) {
-        console.error("Session error:", sessErr)
-        throw new Error("Errore nel recuperare la sessione. Prova a ricaricare la pagina.")
-      }
+      if (sessErr) throw sessErr
 
       const token = sessData.session?.access_token
-      
-      if (!token) {
-        console.error("No access token found")
-        throw new Error("Non sei loggato (manca access_token). Prova a fare logout e login.")
-      }
+      if (!token) throw new Error("Sessione assente: fai login prima di pagare.")
 
-      console.log("Session user:", sessData.session?.user?.id)
-      console.log("Has token:", !!token)
-
-      const res = await supabase.functions.invoke('create-payment-intent', {
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { matchId },
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
-      console.log('EDGE invoke res:', res)
-
-      if (res.error) {
-        const status = (res.error as any)?.context?.status
-        const body = (res.error as any)?.context?.body
-        console.error('EDGE status:', status)
-        console.error('EDGE body:', body)
-        throw new Error(`Edge error ${status}: ${JSON.stringify(body)}`)
+      if (error) {
+        console.error("Edge error", error, (error as any)?.context)
+        throw error
       }
 
-      console.log('EDGE data:', res.data)
-
-      if (res.data?.alreadyConfirmed) {
+      if (data?.alreadyConfirmed) {
         await reloadParticipation()
         toast.success('La partecipazione è già confermata!')
         return
       }
 
-      if (!res.data?.clientSecret) {
+      if (!data?.clientSecret) {
         throw new Error('Missing clientSecret from create-payment-intent')
       }
       
-      setClientSecret(res.data.clientSecret)
+      setClientSecret(data.clientSecret)
     } catch (e: any) {
       const errorMsg = e.message ?? String(e)
       setError(errorMsg)
