@@ -16,6 +16,8 @@ import {
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { getMatchDetail, getMyParticipation, joinMatch } from '@/lib/api'
+import { supabase } from '@/lib/supabaseClient'
+import { Checkout } from '@/components/Checkout'
 
 interface MatchDetailProps {
   matchId: string
@@ -50,6 +52,8 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
   const [participation, setParticipation] = useState<Participation | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [clientSecret, setClientSecret] = useState<string>('')
+  const [payBusy, setPayBusy] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -86,6 +90,72 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
       }
       toast.error(msg)
     }
+  }
+
+  async function startPayment() {
+    setPayBusy(true)
+    setClientSecret('')
+    setError('')
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('create-payment-intent', {
+        body: { matchId },
+      })
+      
+      if (invokeError) throw invokeError
+
+      if (data?.alreadyConfirmed) {
+        await reloadParticipation()
+        toast.success('La partecipazione è già confermata!')
+        return
+      }
+
+      if (!data?.clientSecret) {
+        throw new Error('Missing clientSecret from create-payment-intent')
+      }
+      
+      setClientSecret(data.clientSecret)
+    } catch (e: any) {
+      const errorMsg = e.message ?? String(e)
+      setError(errorMsg)
+      toast.error(errorMsg)
+    } finally {
+      setPayBusy(false)
+    }
+  }
+
+  async function reloadParticipation() {
+    try {
+      const partData = await getMyParticipation(matchId, userId)
+      setParticipation(partData)
+    } catch (err: any) {
+      console.warn('Error reloading participation:', err)
+    }
+  }
+
+  async function pollUntilConfirmed() {
+    toast.info('In attesa della conferma dal server...')
+    let attempts = 0
+    const maxAttempts = 15
+    
+    const pollInterval = setInterval(async () => {
+      attempts++
+      
+      try {
+        const partData = await getMyParticipation(matchId, userId)
+        
+        if (partData?.status === 'confirmed') {
+          clearInterval(pollInterval)
+          setParticipation(partData)
+          setClientSecret('')
+          toast.success('Pagamento confermato! Ci vediamo in campo!')
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval)
+          toast.warning('La conferma sta richiedendo più tempo del previsto. Ricarica la pagina tra qualche istante.')
+        }
+      } catch (err) {
+        console.warn('Polling error:', err)
+      }
+    }, 2000)
   }
 
   function formatDateTime(dateString: string) {
@@ -279,10 +349,36 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
                   <AlertDescription className="text-yellow-800">
                     <strong>In attesa di pagamento</strong>
                     <div className="mt-2 text-sm">
-                      Nel Punto 6 aggiungiamo Stripe Elements e il bottone "Paga ora".
+                      Completa il pagamento per confermare. La conferma definitiva arriva via webhook.
                     </div>
                   </AlertDescription>
                 </Alert>
+
+                {!clientSecret ? (
+                  <Button
+                    onClick={startPayment}
+                    disabled={payBusy}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                    size="lg"
+                  >
+                    <CreditCard size={20} weight="bold" className="mr-2" />
+                    {payBusy ? 'Avvio pagamento…' : 'Paga ora'}
+                  </Button>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Checkout
+                      clientSecret={clientSecret}
+                      onCancel={() => setClientSecret('')}
+                      onSuccess={async () => {
+                        await pollUntilConfirmed()
+                      }}
+                    />
+                  </motion.div>
+                )}
               </div>
             )}
 
