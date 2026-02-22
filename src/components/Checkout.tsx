@@ -34,6 +34,38 @@ export function Checkout({ clientSecret, onSuccess, onCancel }: CheckoutProps) {
     [clientSecret]
   )
 
+  if (!stripePromise) {
+    return (
+      <Card className="w-full max-w-lg mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <XCircle size={24} weight="duotone" className="text-destructive" />
+            Configurazione Mancante
+          </CardTitle>
+          <CardDescription>
+            Il sistema di pagamento non è configurato
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertDescription>
+              <p className="font-medium mb-2">VITE_STRIPE_PUBLISHABLE_KEY non è impostata.</p>
+              <p className="text-xs">
+                Per abilitare i pagamenti, configura la variabile d'ambiente VITE_STRIPE_PUBLISHABLE_KEY.
+                Consulta ENV_VARS.md o SPARK_ENV_SETUP.md per le istruzioni.
+              </p>
+            </AlertDescription>
+          </Alert>
+          {onCancel && (
+            <Button onClick={onCancel} variant="outline" className="w-full mt-4">
+              Chiudi
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardHeader>

@@ -26,6 +26,7 @@ Before running this application, you need:
 1. A Supabase account and project
 2. Node.js 18+ installed
 3. npm or yarn package manager
+4. (Optional) A Stripe account for payment functionality
 
 ## ⚙️ Environment Setup
 
@@ -46,9 +47,12 @@ See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed setup instructions.
    ```bash
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your-key-here  # Optional, for payments
    ```
 
-   Get these values from [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+   Get these values from:
+   - **Supabase**: [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+   - **Stripe** (optional): [Stripe Dashboard](https://dashboard.stripe.com) → Developers → API keys
 
 3. Install dependencies:
    ```bash
@@ -70,11 +74,14 @@ When deploying to any platform, set these environment variables:
 
 - `VITE_SUPABASE_URL` - Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Your Supabase anon/public key
+- `VITE_STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key (optional, for payments)
 
 **Important:** 
 - Always use the `VITE_` prefix (required for Vite apps)
 - Use the **anon/public key**, not the service role key
+- Use the Stripe **publishable key** (starts with `pk_`), not the secret key
 - After adding variables, redeploy your application
+- If Stripe is not configured, payment functionality will be disabled gracefully
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for platform-specific instructions.
 
