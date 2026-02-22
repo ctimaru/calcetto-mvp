@@ -98,12 +98,27 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
     setError('')
     try {
       const { data: sessData, error: sessErr } = await supabase.auth.getSession()
-      console.log("session err:", sessErr)
-      console.log("session user:", sessData.session?.user?.id)
-      console.log("has token:", !!sessData.session?.access_token)
+      
+      if (sessErr) {
+        console.error("Session error:", sessErr)
+        throw new Error("Errore nel recuperare la sessione. Prova a ricaricare la pagina.")
+      }
+
+      const token = sessData.session?.access_token
+      
+      if (!token) {
+        console.error("No access token found")
+        throw new Error("Non sei loggato (manca access_token). Prova a fare logout e login.")
+      }
+
+      console.log("Session user:", sessData.session?.user?.id)
+      console.log("Has token:", !!token)
 
       const res = await supabase.functions.invoke('create-payment-intent', {
         body: { matchId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       console.log('EDGE invoke res:', res)
