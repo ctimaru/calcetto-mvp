@@ -134,28 +134,30 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
 
   async function pollUntilConfirmed() {
     toast.info('In attesa della conferma dal server...')
-    let attempts = 0
-    const maxAttempts = 15
     
-    const pollInterval = setInterval(async () => {
-      attempts++
+    for (let i = 0; i < 6; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
       
       try {
-        const partData = await getMyParticipation(matchId, userId)
-        
-        if (partData?.status === 'confirmed') {
-          clearInterval(pollInterval)
-          setParticipation(partData)
+        const { data, error } = await supabase
+          .from('participations')
+          .select('id, status')
+          .eq('match_id', matchId)
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (!error && data?.status === 'confirmed') {
+          setParticipation((prev: any) => ({ ...prev, status: 'confirmed' }))
           setClientSecret('')
           toast.success('Pagamento confermato! Ci vediamo in campo!')
-        } else if (attempts >= maxAttempts) {
-          clearInterval(pollInterval)
-          toast.warning('La conferma sta richiedendo più tempo del previsto. Ricarica la pagina tra qualche istante.')
+          return
         }
       } catch (err) {
         console.warn('Polling error:', err)
       }
-    }, 2000)
+    }
+    
+    toast.warning('Se non si aggiorna, ricarica la pagina')
   }
 
   function formatDateTime(dateString: string) {
