@@ -89,10 +89,22 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for platform-specific instructions.
 
 The application includes hard checks for required environment variables. If `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` are missing, the app will throw an error immediately, preventing undefined values from causing runtime issues.
 
+## 💳 Payment Feature Setup (Optional)
+
+If you want to enable payment functionality, you need to:
+
+1. **Set up Stripe** - Get your Stripe publishable key and add it to environment variables
+2. **Deploy Edge Function** - The payment processing requires a Supabase Edge Function
+
+See **[EDGE_FUNCTION_GUIDE.md](./EDGE_FUNCTION_GUIDE.md)** for complete instructions on deploying the `create-payment-intent` edge function.
+
+> ⚠️ **Important**: Edge Functions must be deployed separately to Supabase using the Supabase CLI. They cannot be deployed from this frontend project.
+
 ## 📚 Documentation
 
 - [Deployment Guide](./DEPLOYMENT.md) - Complete deployment instructions for all platforms
 - [Supabase Setup Guide](./SUPABASE_SETUP.md) - Detailed Supabase configuration
+- [Edge Function Guide](./EDGE_FUNCTION_GUIDE.md) - Payment edge function deployment
 - [Authentication Guide](./AUTH_GUIDE.md) - User authentication flow
 - [Security Guidelines](./SECURITY.md) - Security best practices
 
