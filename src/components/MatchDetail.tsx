@@ -97,23 +97,33 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
     setClientSecret('')
     setError('')
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('create-payment-intent', {
+      const res = await supabase.functions.invoke('create-payment-intent', {
         body: { matchId },
       })
-      
-      if (invokeError) throw invokeError
 
-      if (data?.alreadyConfirmed) {
+      console.log('EDGE invoke res:', res)
+
+      if (res.error) {
+        const status = (res.error as any)?.context?.status
+        const body = (res.error as any)?.context?.body
+        console.error('EDGE status:', status)
+        console.error('EDGE body:', body)
+        throw new Error(`Edge error ${status}: ${JSON.stringify(body)}`)
+      }
+
+      console.log('EDGE data:', res.data)
+
+      if (res.data?.alreadyConfirmed) {
         await reloadParticipation()
         toast.success('La partecipazione è già confermata!')
         return
       }
 
-      if (!data?.clientSecret) {
+      if (!res.data?.clientSecret) {
         throw new Error('Missing clientSecret from create-payment-intent')
       }
       
-      setClientSecret(data.clientSecret)
+      setClientSecret(res.data.clientSecret)
     } catch (e: any) {
       const errorMsg = e.message ?? String(e)
       setError(errorMsg)
