@@ -231,9 +231,9 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10">
-        <ArrowLeft size={20} />
+        <ArrowLeft size={20} weight="bold" />
         Torna alle partite
       </Button>
 
@@ -241,175 +241,202 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        className="grid lg:grid-cols-3 gap-6"
       >
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">Dettaglio Partita</CardTitle>
-                <Badge variant="secondary" className="w-fit">
-                  {match.status === 'published' ? 'Pubblicata' : match.status}
-                </Badge>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-primary">
-                  {formatPrice(match.price_per_player_cents)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  per giocatore
-                </div>
-              </div>
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="overflow-hidden">
+            <div 
+              className="w-full h-64 bg-gradient-to-br from-primary/30 via-accent/30 to-secondary/30 flex items-center justify-center relative overflow-hidden"
+            >
+              <div className="absolute inset-0 opacity-40"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 15px,
+                    oklch(0.45 0.12 155 / 0.15) 15px,
+                    oklch(0.45 0.12 155 / 0.15) 30px
+                  )`
+                }}
+              />
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="relative z-10 text-center"
+              >
+                <Calendar size={96} weight="duotone" className="text-primary/80 mx-auto mb-4" />
+                <h1 className="text-3xl font-bold text-foreground">
+                  {formatDateTime(match.start_time)}
+                </h1>
+              </motion.div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <Warning size={16} />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            
+            <CardContent className="p-6 space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <Warning size={16} />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Calendar size={24} weight="duotone" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Data e ora</div>
-                    <div className="font-semibold">{formatDateTime(match.start_time)}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Clock size={24} weight="duotone" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Durata</div>
-                    <div className="font-semibold">{match.duration_min} minuti</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Users size={24} weight="duotone" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Giocatori richiesti</div>
-                    <div className="font-semibold">
-                      {match.players_needed} giocatori
+              <div>
+                <h2 className="text-2xl font-bold mb-4">Dettagli della partita</h2>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                      <Clock size={28} weight="duotone" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-muted-foreground">Durata</div>
+                      <div className="text-lg font-bold">{match.duration_min} minuti</div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                {match.fields && (
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
-                      <MapPin size={24} weight="duotone" />
+                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                      <Users size={28} weight="duotone" />
                     </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Campo</div>
-                      <div className="font-semibold">{match.fields.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {match.fields.address}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-muted-foreground">Giocatori</div>
+                      <div className="text-lg font-bold">{match.players_needed} giocatori richiesti</div>
+                    </div>
+                  </div>
+
+                  {match.fields && (
+                    <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                      <div className="p-3 rounded-xl bg-secondary/10 text-secondary">
+                        <MapPin size={28} weight="duotone" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-muted-foreground">Campo</div>
+                        <div className="text-lg font-bold">{match.fields.name}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {match.fields.address}
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <Badge variant="secondary" className="text-base px-4 py-2">
+                      {getSkillLabel(match.skill_level)}
+                    </Badge>
+                    <Badge variant="outline" className="text-base px-4 py-2">
+                      {match.city}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="sticky top-24">
+            <Card className="border-2 border-primary/20 shadow-lg">
+              <CardContent className="p-6 space-y-6">
+                <div className="text-center pb-4 border-b">
+                  <div className="text-sm text-muted-foreground mb-2">Prezzo per giocatore</div>
+                  <div className="text-5xl font-bold text-primary mb-2">
+                    {formatPrice(match.price_per_player_cents)}
+                  </div>
+                  <Badge variant="secondary">
+                    {match.status === 'published' ? 'Disponibile' : match.status}
+                  </Badge>
+                </div>
+
+                {!participation && (
+                  <div className="space-y-4">
+                    <Alert>
+                      <CreditCard size={16} />
+                      <AlertDescription className="text-sm">
+                        Il pagamento è obbligatorio per confermare la partecipazione
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <Button 
+                      onClick={handleJoin}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
+                      size="lg"
+                    >
+                      Prenota ora
+                    </Button>
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Livello di gioco</div>
-                  <Badge variant="outline" className="text-base">
-                    {getSkillLabel(match.skill_level)}
-                  </Badge>
-                </div>
+                {participation && participation.status === 'pending_payment' && (
+                  <div className="space-y-4">
+                    <Alert className="bg-amber-50 border-amber-200">
+                      <Warning size={16} className="text-amber-600" />
+                      <AlertDescription className="text-amber-900">
+                        <strong>Prenotazione creata</strong>
+                        <div className="mt-2 text-sm">
+                          Completa il pagamento per confermare il tuo posto.
+                        </div>
+                      </AlertDescription>
+                    </Alert>
 
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Città</div>
-                  <Badge variant="outline">
-                    {match.city}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+                    {!clientSecret ? (
+                      <Button
+                        onClick={startPayment}
+                        disabled={payBusy}
+                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl transition-all"
+                        size="lg"
+                      >
+                        <CreditCard size={20} weight="bold" className="mr-2" />
+                        {payBusy ? 'Caricamento...' : 'Paga ora'}
+                      </Button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Checkout
+                          clientSecret={clientSecret}
+                          onCancel={() => setClientSecret('')}
+                          onSuccess={async () => {
+                            await pollUntilConfirmed()
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+                )}
 
-            <Separator />
+                {participation && participation.status === 'confirmed' && (
+                  <Alert className="bg-emerald-50 border-emerald-200">
+                    <CreditCard size={16} className="text-emerald-600" />
+                    <AlertDescription className="text-emerald-900">
+                      <strong className="text-lg">✓ Confermato!</strong>
+                      <div className="mt-2 text-sm">
+                        Il tuo posto è confermato. Ci vediamo in campo!
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-            {!participation && (
-              <div className="space-y-4">
-                <Alert>
-                  <CreditCard size={16} />
-                  <AlertDescription>
-                    Il pagamento è obbligatorio per confermare la partecipazione
-                  </AlertDescription>
-                </Alert>
+                <Separator />
                 
-                <Button 
-                  onClick={handleJoin}
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                  size="lg"
-                >
-                  Partecipa alla partita
-                </Button>
-              </div>
-            )}
-
-            {participation && participation.status === 'pending_payment' && (
-              <div className="space-y-4">
-                <Alert className="bg-yellow-50 border-yellow-200">
-                  <Warning size={16} className="text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    <strong>In attesa di pagamento</strong>
-                    <div className="mt-2 text-sm">
-                      Completa il pagamento per confermare. La conferma definitiva arriva via webhook.
-                    </div>
-                  </AlertDescription>
-                </Alert>
-
-                {!clientSecret ? (
-                  <Button
-                    onClick={startPayment}
-                    disabled={payBusy}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                    size="lg"
-                  >
-                    <CreditCard size={20} weight="bold" className="mr-2" />
-                    {payBusy ? 'Avvio pagamento…' : 'Paga ora'}
-                  </Button>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Checkout
-                      clientSecret={clientSecret}
-                      onCancel={() => setClientSecret('')}
-                      onSuccess={async () => {
-                        await pollUntilConfirmed()
-                      }}
-                    />
-                  </motion.div>
-                )}
-              </div>
-            )}
-
-            {participation && participation.status === 'confirmed' && (
-              <Alert className="bg-green-50 border-green-200">
-                <CreditCard size={16} className="text-green-600" />
-                <AlertDescription className="text-green-800">
-                  <strong>Partecipazione confermata!</strong>
-                  <div className="mt-1 text-sm">
-                    Ci vediamo in campo!
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p className="flex items-start gap-2">
+                    <span className="text-primary">✓</span>
+                    <span>Pagamento sicuro e protetto</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-primary">✓</span>
+                    <span>Conferma immediata via email</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-primary">✓</span>
+                    <span>Chat con i partecipanti</span>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </motion.div>
     </div>
   )
