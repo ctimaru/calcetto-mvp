@@ -332,52 +332,104 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
           </Card>
         </div>
 
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Checkout
-                          clientSecret={clientSecret}
-                          onCancel={() => setClientSecret('')}
-                          onSuccess={async () => {
-                            await pollUntilConfirmed()
-                          }}
-                        />
-                      </motion.div>
-                    )}
-                  </div>
-                )}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                €{(match.price_per_player_cents / 100).toFixed(2)}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">per giocatore</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!participation && (
+                <div className="space-y-4">
+                  <Alert>
+                    <CreditCard size={16} />
+                    <AlertDescription>
+                      Il pagamento è obbligatorio per confermare la partecipazione
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <Button 
+                    onClick={handleJoin}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                    size="lg"
+                  >
+                    Partecipa alla partita
+                  </Button>
+                </div>
+              )}
 
-                {participation && participation.status === 'confirmed' && (
-                  <Alert className="bg-emerald-50 border-emerald-200">
-                    <CreditCard size={16} className="text-emerald-600" />
-                    <AlertDescription className="text-emerald-900">
-                      <strong className="text-lg">✓ Confermato!</strong>
+              {participation && participation.status === 'pending_payment' && (
+                <div className="space-y-4">
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <Warning size={16} className="text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      <strong>In attesa di pagamento</strong>
                       <div className="mt-2 text-sm">
-                        Il tuo posto è confermato. Ci vediamo in campo!
+                        Completa il pagamento per confermare.
                       </div>
                     </AlertDescription>
                   </Alert>
-                )}
 
-                <Separator />
-                
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">✓</span>
-                    <span>Pagamento sicuro e protetto</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">✓</span>
-                    <span>Conferma immediata via email</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span className="text-primary">✓</span>
-                    <span>Chat con i partecipanti</span>
-                  </p>
+                  {!clientSecret ? (
+                    <Button
+                      onClick={startPayment}
+                      disabled={payBusy}
+                      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                      size="lg"
+                    >
+                      <CreditCard size={20} weight="bold" className="mr-2" />
+                      {payBusy ? 'Avvio pagamento…' : 'Paga ora'}
+                    </Button>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Checkout
+                        clientSecret={clientSecret}
+                        onCancel={() => setClientSecret('')}
+                        onSuccess={async () => {
+                          await pollUntilConfirmed()
+                        }}
+                      />
+                    </motion.div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+
+              {participation && participation.status === 'confirmed' && (
+                <Alert className="bg-emerald-50 border-emerald-200">
+                  <CreditCard size={16} className="text-emerald-600" />
+                  <AlertDescription className="text-emerald-900">
+                    <strong className="text-lg">✓ Confermato!</strong>
+                    <div className="mt-2 text-sm">
+                      Il tuo posto è confermato. Ci vediamo in campo!
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Separator />
+              
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p className="flex items-start gap-2">
+                  <span className="text-primary">✓</span>
+                  <span>Pagamento sicuro e protetto</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-primary">✓</span>
+                  <span>Conferma immediata via email</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-primary">✓</span>
+                  <span>Chat con i partecipanti</span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </motion.div>
     </div>
