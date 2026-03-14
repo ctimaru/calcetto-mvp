@@ -332,64 +332,6 @@ export function MatchDetail({ matchId, userId, onBack }: MatchDetailProps) {
           </Card>
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="sticky top-24">
-            <Card className="border-2 border-primary/20 shadow-lg">
-              <CardContent className="p-6 space-y-6">
-                <div className="text-center pb-4 border-b">
-                  <div className="text-sm text-muted-foreground mb-2">Prezzo per giocatore</div>
-                  <div className="text-5xl font-bold text-primary mb-2">
-                    {formatPrice(match.price_per_player_cents)}
-                  </div>
-                  <Badge variant="secondary">
-                    {match.status === 'published' ? 'Disponibile' : match.status}
-                  </Badge>
-                </div>
-
-                {!participation && (
-                  <div className="space-y-4">
-                    <Alert>
-                      <CreditCard size={16} />
-                      <AlertDescription className="text-sm">
-                        Il pagamento è obbligatorio per confermare la partecipazione
-                      </AlertDescription>
-                    </Alert>
-                    
-                    <Button 
-                      onClick={handleJoin}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
-                      size="lg"
-                    >
-                      Prenota ora
-                    </Button>
-                  </div>
-                )}
-
-                {participation && participation.status === 'pending_payment' && (
-                  <div className="space-y-4">
-                    <Alert className="bg-amber-50 border-amber-200">
-                      <Warning size={16} className="text-amber-600" />
-                      <AlertDescription className="text-amber-900">
-                        <strong>Prenotazione creata</strong>
-                        <div className="mt-2 text-sm">
-                          Completa il pagamento per confermare il tuo posto.
-                        </div>
-                      </AlertDescription>
-                    </Alert>
-
-                    {!clientSecret ? (
-                      <Button
-                        onClick={startPayment}
-                        disabled={payBusy}
-                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl transition-all"
-                        size="lg"
-                      >
-                        <CreditCard size={20} weight="bold" className="mr-2" />
-                        {payBusy ? 'Caricamento...' : 'Paga ora'}
-                      </Button>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
